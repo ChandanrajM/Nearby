@@ -1,18 +1,23 @@
 package com.nearby.app.data.model
 
+import com.google.gson.annotations.SerializedName
+
+/**
+ * Shop model — matches backend schema
+ */
 data class Shop(
-    val id: String = "",
-    val name: String = "",
-    val owner_name: String = "",
-    val phone: String = "",
-    val address: String = "",
-    val latitude: Double = 0.0,
-    val longitude: Double = 0.0,
-    val category: String = "general",
-    val status: String = "pending",       // pending, approved, rejected
-    val gst_number: String = "",
-    val city: String = "",
-    val image_url: String = "",
-    val created_at: String = "",
-    val distance_km: Double? = null,
+    @SerializedName("id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("category") val category: String,
+    @SerializedName("owner_id") val ownerId: String,
+    @SerializedName("address") val address: String,
+    @SerializedName("lat") val lat: Double,
+    @SerializedName("lng") val lng: Double,
+    @SerializedName("distance_km") val distanceKm: Double? = null,
+    @SerializedName("is_open") val isOpen: Boolean = true,
+    @SerializedName("qr_code_url") val qrCodeUrl: String? = null,
+    
+    // Kept for backward compatibility with existing UI if needed
+    @SerializedName("owner_name") val oldOwnerName: String? = null,
+    @SerializedName("city") val city: String? = null
 )

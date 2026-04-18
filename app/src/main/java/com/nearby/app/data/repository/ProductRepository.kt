@@ -1,7 +1,9 @@
 package com.nearby.app.data.repository
 
-import com.nearby.app.data.api.ApiService
-import com.nearby.app.data.model.Product
+import com.nearby.app.data.network.ApiService
+import com.nearby.app.data.network.CreateProductRequest
+import com.nearby.app.data.network.UpdateProductRequest
+import com.nearby.app.data.network.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -9,68 +11,39 @@ import javax.inject.Singleton
 class ProductRepository @Inject constructor(
     private val api: ApiService,
 ) {
-    suspend fun getProductsByShop(shopId: String): Result<List<Product>> {
-        return try {
-            Result.success(api.getProductsByShop(shopId))
-        } catch (e: Exception) {
-            Result.success(emptyList())
-        }
+    /** Get all products for a shop */
+    fun getShopProducts(shopId: String, category: String? = null) = safeApiCall {
+        api.getShopProducts(shopId, category)
     }
 
-    suspend fun addProduct(
+    /** Add a new product to a shop */
+    fun addProduct(
         shopId: String,
         name: String,
         price: Double,
-        description: String = "",
-        stock: Int = 0,
-        imageUrl: String = "",
-        category: String = "general",
-    ): Result<Map<String, Any>> {
-        return try {
-            val body = mapOf<String, Any>(
-                "shop_id" to shopId,
-                "name" to name,
-                "price" to price,
-                "description" to description,
-                "stock" to stock,
-                "image_url" to imageUrl,
-                "category" to category,
-            )
-            Result.success(api.addProduct(body))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        category: String?,
+        imageUrl: String
+    ) = safeApiCall {
+        api.createProduct(CreateProductRequest(shopId, name, price, category, imageUrl))
     }
 
-    suspend fun updateProduct(
+    /** Update a product (name, price, availability) */
+    fun updateProduct(
         productId: String,
-        name: String,
-        price: Double,
-        description: String,
-        stock: Int,
-        imageUrl: String,
-        category: String,
-    ): Result<Map<String, Any>> {
-        return try {
-            val body = mapOf<String, Any>(
-                "name" to name,
-                "price" to price,
-                "description" to description,
-                "stock" to stock,
-                "image_url" to imageUrl,
-                "category" to category,
-            )
-            Result.success(api.updateProduct(productId, body))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        name: String? = null,
+        price: Double? = null,
+        isAvailable: Boolean? = null
+    ) = safeApiCall {
+        api.updateProduct(productId, UpdateProductRequest(name, price, isAvailable))
     }
 
-    suspend fun deleteProduct(productId: String): Result<Map<String, Any>> {
-        return try {
-            Result.success(api.deleteProduct(productId))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    /** Delete a product */
+    fun deleteProduct(productId: String) = safeApiCall {
+        api.deleteProduct(productId)
+    }
+
+    /** Get a pre-signed URL to upload an image */
+    fun getImageUploadUrl(filename: String, shopId: String) = safeApiCall {
+        api.getImageUploadUrl(mapOf("filename" to filename, "shop_id" to shopId))
     }
 }

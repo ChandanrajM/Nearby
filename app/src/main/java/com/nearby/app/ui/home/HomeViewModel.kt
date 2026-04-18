@@ -43,20 +43,28 @@ class HomeViewModel @Inject constructor(
 
     private fun loadShops() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
             val loc = locationRepo.location.value
-            val result = shopRepo.getNearbyShops(loc.latitude, loc.longitude)
-            result.onSuccess { shops ->
-                _state.value = _state.value.copy(
-                    shops = shops,
-                    filteredShops = shops,
-                    isLoading = false,
-                )
-            }.onFailure {
-                _state.value = _state.value.copy(isLoading = false)
+            shopRepo.getNearbyShops(loc.latitude, loc.longitude).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isLoading = true)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        val shops = result.data.shops
+                        _state.value = _state.value.copy(
+                            shops = shops,
+                            filteredShops = shops,
+                            isLoading = false,
+                        )
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isLoading = false)
+                    }
+                }
             }
         }
     }
+
 
     fun onSearchChange(query: String) {
         _state.value = _state.value.copy(searchQuery = query)

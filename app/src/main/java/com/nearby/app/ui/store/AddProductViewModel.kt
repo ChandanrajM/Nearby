@@ -85,21 +85,26 @@ class AddProductViewModel @Inject constructor(
         val imageUrl = s.selectedImageUri?.toString() ?: ""
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isSubmitting = true, error = null)
-            val result = productRepo.addProduct(
+            productRepo.addProduct(
                 shopId = shopId,
                 name = s.name.trim(),
                 price = price,
-                description = s.description.trim(),
-                stock = stock,
-                imageUrl = imageUrl,
                 category = s.category,
-            )
-            result.onSuccess {
-                _state.value = _state.value.copy(isSubmitting = false, isSuccess = true)
-            }.onFailure { e ->
-                _state.value = _state.value.copy(isSubmitting = false, error = e.message ?: "Failed to add product")
+                imageUrl = imageUrl
+            ).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isSubmitting = true, error = null)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(isSubmitting = false, isSuccess = true)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isSubmitting = false, error = result.message)
+                    }
+                }
             }
         }
+
     }
 }

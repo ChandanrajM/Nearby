@@ -25,6 +25,7 @@ data class ShopUiState(
 @HiltViewModel
 class ShopViewModel @Inject constructor(
     private val shopRepo: ShopRepository,
+    private val productRepo: com.nearby.app.data.repository.ProductRepository,
     private val cartRepo: CartRepository,
 ) : ViewModel() {
 
@@ -33,23 +34,39 @@ class ShopViewModel @Inject constructor(
 
     fun loadShop(shopId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
-            val shopResult = shopRepo.getShop(shopId)
-            val productsResult = shopRepo.getProductsByShop(shopId)
-
-            shopResult.onSuccess { shop ->
-                val products = productsResult.getOrDefault(emptyList())
-                _state.value = _state.value.copy(
-                    shop = shop,
-                    products = products,
-                    filteredProducts = products,
-                    isLoading = false,
-                )
-            }.onFailure {
-                _state.value = _state.value.copy(isLoading = false)
+            // Load Shop Details
+            shopRepo.getShop(shopId).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isLoading = true)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(
+                            shop = result.data,
+                            isLoading = false
+                        )
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isLoading = false)
+                    }
+                }
+            }
+        }
+        
+        viewModelScope.launch {
+            // Load Products
+            productRepo.getShopProducts(shopId).collect { result ->
+                if (result is com.nearby.app.data.network.NetworkResult.Success) {
+                    val products = result.data
+                    _state.value = _state.value.copy(
+                        products = products,
+                        filteredProducts = products
+                    )
+                }
             }
         }
     }
+
 
     fun onCategoryChange(category: String) {
         _state.value = _state.value.copy(selectedCategory = category)

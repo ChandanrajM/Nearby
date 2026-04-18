@@ -1,10 +1,17 @@
 package com.nearby.app.ui.auth
 
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import android.content.Context
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.nearby.app.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -16,7 +23,9 @@ data class AuthUiState(
 )
 
 @HiltViewModel
-class AuthViewModel @Inject constructor() : ViewModel() {
+class AuthViewModel @Inject constructor(
+    private val authRepo: com.nearby.app.data.repository.AuthRepository
+) : androidx.lifecycle.ViewModel() {
 
     private val _state = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
@@ -39,18 +48,96 @@ class AuthViewModel @Inject constructor() : ViewModel() {
             _state.value = _state.value.copy(error = "Enter a valid 10-digit number")
             return
         }
-        // TODO: Call backend /auth/send-otp when available
-        _state.value = _state.value.copy(isOtpSent = true, error = null)
+        
+        viewModelScope.launch {
+            authRepo.sendOtp(phone).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isLoading = true, error = null)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(isLoading = false, isOtpSent = true)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isLoading = false, error = result.message)
+                    }
+                }
+            }
+        }
     }
 
-    fun verifyOtp(): Boolean {
+    fun verifyOtp(onSuccess: () -> Unit) {
         val otp = _state.value.otp
+        val phone = _state.value.phone
         if (otp.length != 6) {
             _state.value = _state.value.copy(error = "Enter the 6-digit OTP")
-            return false
+            return
         }
-        // TODO: Call backend /auth/verify-otp when available
-        // For now, accept any 6-digit OTP
-        return true
+
+        viewModelScope.launch {
+            authRepo.verifyOtp(phone, otp).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isLoading = true, error = null)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(isLoading = false)
+                        onSuccess()
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isLoading = false, error = result.message)
+                    }
+                }
+            }
+        }
+    }
+
+    fun loginWithGoogle(context: Context, onSuccess: () -> Unit) {
+        val credentialManager = CredentialManager.create(context)
+        
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+            .setAutoSelectEnabled(true)
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        viewModelScope.launch {
+            try {
+                _state.value = _state.value.copy(isLoading = true, error = null)
+                val result = credentialManager.getCredential(context = context, request = request)
+                
+                val credential = result.credential
+                if (credential is com.google.android.libraries.identity.googleid.GoogleIdTokenCredential) {
+                    val idToken = credential.idToken
+                    
+                    authRepo.loginWithGoogle(idToken).collect { networkResult ->
+                        when (networkResult) {
+                            is com.nearby.app.data.network.NetworkResult.Loading -> {
+                                _state.value = _state.value.copy(isLoading = true)
+                            }
+                            is com.nearby.app.data.network.NetworkResult.Success -> {
+                                _state.value = _state.value.copy(isLoading = false)
+                                onSuccess()
+                            }
+                            is com.nearby.app.data.network.NetworkResult.Error -> {
+                                _state.value = _state.value.copy(isLoading = false, error = networkResult.message)
+                            }
+                        }
+                    }
+                } else {
+                    _state.value = _state.value.copy(isLoading = false, error = "Unexpected credential type")
+                }
+            } catch (e: GetCredentialException) {
+                _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Failed to sign in")
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoading = false, error = "An error occurred")
+            }
+        }
     }
 }
+
+

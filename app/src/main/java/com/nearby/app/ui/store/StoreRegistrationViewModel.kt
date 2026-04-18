@@ -108,22 +108,33 @@ class StoreRegistrationViewModel @Inject constructor(
         }
         _state.value = s.copy(isSubmitting = true, error = null)
         viewModelScope.launch {
-            val shopData = mapOf(
-                "name" to s.shopName,
-                "owner_name" to s.ownerName,
-                "phone" to s.phone,
-                "address" to s.address,
-                "latitude" to s.latitude,
-                "longitude" to s.longitude,
-                "category" to s.selectedCategory.lowercase(),
-            )
-            val result = shopRepo.registerShop(shopData)
-            result.onSuccess {
-                _state.value = _state.value.copy(isSubmitting = false, isSubmitted = true)
-            }.onFailure { e ->
-                // Even on failure, mark as submitted for demo (mock mode)
-                _state.value = _state.value.copy(isSubmitting = false, isSubmitted = true)
+            shopRepo.createShop(
+                name = s.shopName,
+                category = s.selectedCategory.lowercase(),
+                address = s.address,
+                lat = s.latitude,
+                lng = s.longitude
+            ).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isSubmitting = true)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(
+                            isSubmitting = false,
+                            isSubmitted = true,
+                            error = null
+                        )
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(
+                            isSubmitting = false,
+                            error = result.message
+                        )
+                    }
+                }
             }
         }
+
     }
 }

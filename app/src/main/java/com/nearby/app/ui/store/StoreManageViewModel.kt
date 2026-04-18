@@ -33,20 +33,35 @@ class StoreManageViewModel @Inject constructor(
 
     fun loadStore(shopId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, shopId = shopId)
-            val shopResult = shopRepo.getShop(shopId)
-            val productsResult = shopRepo.getProductsByShop(shopId)
-
-            shopResult.onSuccess { shop ->
-                val products = productsResult.getOrDefault(emptyList())
-                _state.value = _state.value.copy(
-                    shopName = shop.name,
-                    products = products,
-                    filteredProducts = products,
-                    isLoading = false,
-                )
-            }.onFailure {
-                _state.value = _state.value.copy(isLoading = false)
+            // Load Shop Details
+            shopRepo.getShop(shopId).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isLoading = true, shopId = shopId)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(
+                            shopName = result.data.name,
+                            isLoading = false
+                        )
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isLoading = false)
+                    }
+                }
+            }
+        }
+        
+        viewModelScope.launch {
+            // Load Products
+            productRepo.getShopProducts(shopId).collect { result ->
+                if (result is com.nearby.app.data.network.NetworkResult.Success) {
+                    val products = result.data
+                    _state.value = _state.value.copy(
+                        products = products,
+                        filteredProducts = products
+                    )
+                }
             }
         }
     }
@@ -56,56 +71,61 @@ class StoreManageViewModel @Inject constructor(
         val all = _state.value.products
         val filtered = if (category == "All") all
         else all.filter {
-            it.category.replace("_", " ").equals(category, ignoreCase = true)
+            it.category?.replace("_", " ")?.equals(category, ignoreCase = true) == true
         }
         _state.value = _state.value.copy(filteredProducts = filtered)
     }
 
-    fun addProduct(name: String, price: String, description: String) {
+    fun addProduct(name: String, price: String, category: String, imageUrl: String) {
         val priceVal = price.toDoubleOrNull() ?: return
         viewModelScope.launch {
             productRepo.addProduct(
                 shopId = _state.value.shopId,
                 name = name,
                 price = priceVal,
-                description = description,
-            )
-            loadStore(_state.value.shopId)
+                category = category,
+                imageUrl = imageUrl
+            ).collect { result ->
+                if (result is com.nearby.app.data.network.NetworkResult.Success) {
+                    loadStore(_state.value.shopId)
+                }
+            }
         }
     }
 
     fun updateProduct(
         productId: String,
-        name: String,
-        price: String,
-        description: String,
-        stock: String,
+        name: String? = null,
+        price: String? = null,
+        isAvailable: Boolean? = null
     ) {
-        val priceVal = price.toDoubleOrNull() ?: return
-        val stockVal = stock.toIntOrNull() ?: 0
+        val priceVal = price?.toDoubleOrNull()
         viewModelScope.launch {
-            val existing = _state.value.products.find { it.id == productId } ?: return@launch
             productRepo.updateProduct(
                 productId = productId,
                 name = name,
                 price = priceVal,
-                description = description,
-                stock = stockVal,
-                imageUrl = existing.image_url,
-                category = existing.category,
-            )
-            loadStore(_state.value.shopId)
+                isAvailable = isAvailable
+            ).collect { result ->
+                if (result is com.nearby.app.data.network.NetworkResult.Success) {
+                    loadStore(_state.value.shopId)
+                }
+            }
         }
     }
 
     fun deleteProduct(productId: String) {
         viewModelScope.launch {
-            productRepo.deleteProduct(productId)
-            // Optimistic local remove
-            _state.value = _state.value.copy(
-                products = _state.value.products.filter { it.id != productId },
-                filteredProducts = _state.value.filteredProducts.filter { it.id != productId },
-            )
+            productRepo.deleteProduct(productId).collect { result ->
+                if (result is com.nearby.app.data.network.NetworkResult.Success) {
+                    // Optimistic local remove after success
+                    _state.value = _state.value.copy(
+                        products = _state.value.products.filter { it.id != productId },
+                        filteredProducts = _state.value.filteredProducts.filter { it.id != productId },
+                    )
+                }
+            }
         }
     }
 }
+

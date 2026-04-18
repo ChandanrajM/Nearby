@@ -19,16 +19,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nearby.app.ui.theme.*
 
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+
 @Composable
 fun StoreQRScreen(
     shopId: String,
     onBack: () -> Unit,
+    viewModel: StoreQRViewModel = hiltViewModel()
 ) {
-    // The QR code image would be loaded from the backend endpoint:
-    // GET /shops/{shopId}/qr  -> returns a PNG image
-    // For now we show a placeholder with the QR URL text
+    val state by viewModel.state.collectAsState()
 
-    val qrUrl = "https://nearby.app/shop/$shopId"
+    LaunchedEffect(shopId) {
+        viewModel.loadQrCode(shopId)
+    }
 
     Box(
         modifier = Modifier
@@ -68,7 +72,7 @@ fun StoreQRScreen(
                 modifier = Modifier
                     .size(300.dp),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = NearbyTextPrimary),
+                colors = CardDefaults.cardColors(containerColor = Color.White), // White background for better scanning
                 elevation = CardDefaults.cardElevation(8.dp),
             ) {
                 Box(
@@ -77,43 +81,19 @@ fun StoreQRScreen(
                         .padding(24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Placeholder QR pattern
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // In production, this would be AsyncImage loading from /shops/{shopId}/qr
-                        Box(
-                            modifier = Modifier
-                                .size(200.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(
-                                    width = 3.dp,
-                                    brush = Brush.linearGradient(listOf(NearbyCyanDark, NearbyGreen)),
-                                    shape = RoundedCornerShape(12.dp),
-                                )
-                                .background(NearbyCardLight),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "QR",
-                                    style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = NearbyCyan,
-                                )
-                                Text(
-                                    text = shopId.take(8),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = NearbyTextTertiary,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "NEARBY",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 4.sp,
-                            ),
-                            color = NearbyBlack,
+                    if (state.isLoading) {
+                        CircularProgressIndicator(color = NearbyCyan)
+                    } else if (state.error != null) {
+                        Text(state.error!!, color = NearbyError, textAlign = TextAlign.Center)
+                    } else if (state.qrImageUrl != null) {
+                        AsyncImage(
+                            model = state.qrImageUrl,
+                            contentDescription = "Shop QR Code",
+                            modifier = Modifier.fillMaxSize()
                         )
+                    } else {
+                        // Placeholder if no image yet
+                        Text("No QR code available", color = NearbyTextTertiary)
                     }
                 }
             }
@@ -137,6 +117,7 @@ fun StoreQRScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 32.dp),
             )
+
 
             Spacer(Modifier.height(40.dp))
 

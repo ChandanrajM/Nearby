@@ -1,3 +1,13 @@
+import java.util.Properties
+
+// ── Read local.properties at script level (before any blocks) ──────────────
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
+}
+// val apiUrl replaced by BuildConfig.BASE_URL logic below
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,12 +28,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        val localProperties = java.util.Properties()
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localProperties.load(localPropertiesFile.inputStream())
-        }
-        buildConfigField("String", "API_URL", "\"${localProperties["API_URL"] ?: "https://nearby-backend-production-3664.up.railway.app/"}\"")
+
+        // Production configuration from local.properties
+        buildConfigField("String", "BASE_URL", "\"${localProps.getProperty("BASE_URL", "https://nearby-backend-production-3664.up.railway.app/")}\"")
+        buildConfigField("String", "CERT_PIN_1", "\"${localProps.getProperty("CERT_PIN_1", "")}\"")
+        buildConfigField("String", "CERT_PIN_2", "\"${localProps.getProperty("CERT_PIN_2", "")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localProps.getProperty("GOOGLE_WEB_CLIENT_ID", "152760818746-0dn33as1g8nrf81f8btb4o5e10bhre44.apps.googleusercontent.com")}\"")
     }
 
     buildTypes {
@@ -44,14 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
-    }
-
-    // Read API URL from local.properties
-    val localProperties = java.util.Properties()
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localProperties.load(localPropertiesFile.inputStream())
+        buildConfig = true  // required to generate BuildConfig.API_URL
     }
 }
 
@@ -73,7 +76,15 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Android Security & Auth
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play)
+    implementation(libs.googleid)
+
+
     // Retrofit & OkHttp
+
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp)
@@ -86,7 +97,6 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
-
 
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode)

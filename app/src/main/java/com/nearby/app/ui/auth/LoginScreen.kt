@@ -142,9 +142,8 @@ fun LoginScreen(
                     if (!state.isOtpSent) {
                         viewModel.sendOtp()
                     } else {
-                        if (viewModel.verifyOtp()) {
-                            onLoginSuccess()
-                        }
+                        viewModel.verifyOtp(onSuccess = onLoginSuccess)
+
                     }
                 },
                 modifier = Modifier
@@ -183,12 +182,12 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ── Google Sign-In Button ──────────────────────────────────
+            val context = androidx.compose.ui.platform.LocalContext.current
             OutlinedButton(
                 onClick = {
-                    // TODO: Implement Google Sign-In with credential manager
-                    onLoginSuccess()
+                    viewModel.loginWithGoogle(context, onSuccess = onLoginSuccess)
                 },
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
