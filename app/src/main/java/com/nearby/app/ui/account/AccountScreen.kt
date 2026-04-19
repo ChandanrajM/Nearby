@@ -30,11 +30,14 @@ fun AccountScreen(
     onSavedAddresses: () -> Unit = {},
     onHelpSupport: () -> Unit = {},
     onAbout: () -> Unit = {},
+    viewModel: AccountViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
 ) {
-    // Mock state — replace with actual user data from auth
-    var hasStore by remember { mutableStateOf(false) }
-    var storeApproved by remember { mutableStateOf(false) }
-    var storeUnderReview by remember { mutableStateOf(false) }
+    val state by viewModel.state.collectAsState()
+    val user = state.user
+
+    val hasStore = user?.shop_id != null
+    val storeApproved = user?.shopStatus == "approved"
+    val storeUnderReview = user?.shopStatus == "pending"
 
     Column(
         modifier = Modifier
@@ -66,12 +69,12 @@ fun AccountScreen(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "User",
+                text = user?.name?.takeIf { it.isNotBlank() } ?: "User",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = NearbyTextPrimary,
             )
             Text(
-                text = "+91 9999999999",
+                text = user?.phone ?: "",
                 style = MaterialTheme.typography.bodyMedium,
                 color = NearbyTextSecondary,
             )

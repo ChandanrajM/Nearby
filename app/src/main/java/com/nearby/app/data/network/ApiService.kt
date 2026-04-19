@@ -72,6 +72,10 @@ data class UploadUrlResponse(
     @SerializedName("image_url") val imageUrl: String
 )
 
+data class UploadResponse(
+    @SerializedName("image_url") val imageUrl: String
+)
+
 data class QrCodeResponse(
     @SerializedName("qr_image_url") val qrImageUrl: String,
     @SerializedName("deep_link") val deepLink: String
@@ -175,9 +179,10 @@ interface ApiService {
     @DELETE("products/{id}")
     suspend fun deleteProduct(@Path("id") productId: String): Response<Unit>
 
-    /** Get a pre-signed URL for image upload */
-    @POST("products/upload-url")
-    suspend fun getImageUploadUrl(
-        @Body body: Map<String, String>
-    ): Response<UploadUrlResponse>
+    /** Upload an image file for a product */
+    @Multipart
+    @POST("upload")
+    suspend fun uploadImage(
+        @Part file: okhttp3.MultipartBody.Part
+    ): Response<UploadResponse>
 }

@@ -8,10 +8,16 @@ import androidx.lifecycle.viewModelScope
 import com.nearby.app.data.repository.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 data class AddProductState(
@@ -33,6 +39,7 @@ data class AddProductState(
 @HiltViewModel
 class AddProductViewModel @Inject constructor(
     private val productRepo: ProductRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddProductState())
@@ -81,21 +88,43 @@ class AddProductViewModel @Inject constructor(
         }
         val stock = s.stock.toIntOrNull() ?: 0
 
-        // Image URL: In production upload to Supabase Storage / Cloudinary first
-        val imageUrl = s.selectedImageUri?.toString() ?: ""
-
         viewModelScope.launch {
+            _state.value = _state.value.copy(isSubmitting = true, error = null)
+
+            var finalImageUrl = ""
+
+            // Upload image if Uri is selected
+            if (s.selectedImageUri != null) {
+                try {
+                    val stream = context.contentResolver.openInputStream(s.selectedImageUri)
+                    val bytes = stream?.readBytes()
+                    stream?.close()
+                    if (bytes != null) {
+                        val requestBody = bytes.toRequestBody("image/*".toMediaTypeOrNull())
+                        val part = MultipartBody.Part.createFormData("file", "upload.jpg", requestBody)
+                        val uploadResult = productRepo.uploadImage(part)
+
+                        uploadResult.collect { netRes ->
+                            if (netRes is com.nearby.app.data.network.NetworkResult.Success) {
+                                finalImageUrl = netRes.data.imageUrl
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    _state.value = _state.value.copy(isSubmitting = false, error = "Image upload failed")
+                    return@launch
+                }
+            }
+
             productRepo.addProduct(
                 shopId = shopId,
                 name = s.name.trim(),
                 price = price,
                 category = s.category,
-                imageUrl = imageUrl
+                imageUrl = finalImageUrl
             ).collect { result ->
                 when (result) {
-                    is com.nearby.app.data.network.NetworkResult.Loading -> {
-                        _state.value = _state.value.copy(isSubmitting = true, error = null)
-                    }
+                    is com.nearby.app.data.network.NetworkResult.Loading -> { } // Already loading
                     is com.nearby.app.data.network.NetworkResult.Success -> {
                         _state.value = _state.value.copy(isSubmitting = false, isSuccess = true)
                     }

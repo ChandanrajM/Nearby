@@ -42,8 +42,8 @@ class ProductRepository @Inject constructor(
         api.deleteProduct(productId)
     }
 
-    /** Get a pre-signed URL to upload an image */
-    fun getImageUploadUrl(filename: String, shopId: String) = safeApiCall {
-        api.getImageUploadUrl(mapOf("filename" to filename, "shop_id" to shopId))
+    /** Upload an image file directly to the backend */
+    fun uploadImage(file: okhttp3.MultipartBody.Part) = safeApiCall {
+        api.uploadImage(file)
     }
 }

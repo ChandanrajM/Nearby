@@ -9,4 +9,5 @@ data class User(
     @SerializedName("email") val email: String = "",
     @SerializedName("avatar_url") val avatar_url: String = "",
     @SerializedName("shop_id") val shop_id: String? = null,   // non-null if user owns a store
+    @SerializedName("shop_status") val shopStatus: String? = null,
 )

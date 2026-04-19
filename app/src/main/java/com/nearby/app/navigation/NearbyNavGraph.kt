@@ -171,15 +171,20 @@ fun NearbyNavGraph(navController: NavHostController) {
 }
 
 @Composable
-fun MainScreen(rootNavController: NavHostController) {
+fun MainScreen(
+    rootNavController: NavHostController,
+    viewModel: com.nearby.app.ui.account.AccountViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+) {
     val bottomNavController = rememberNavController()
     val currentRoute by bottomNavController.currentBackStackEntryAsState()
     val currentDestination = currentRoute?.destination?.route
+    val userState by viewModel.state.collectAsState()
 
     Scaffold(
         bottomBar = {
             NearbyBottomBar(
                 currentRoute = currentDestination ?: Routes.Home.route,
+                user = userState.user,
                 onNavigate = { route ->
                     bottomNavController.navigate(route) {
                         popUpTo(Routes.Home.route) { saveState = true }

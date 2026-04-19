@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nearby.app.data.repository.LocationRepository
 import com.nearby.app.data.repository.ShopRepository
+import com.nearby.app.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,7 @@ data class StoreRegState(
 class StoreRegistrationViewModel @Inject constructor(
     private val shopRepo: ShopRepository,
     val locationRepo: LocationRepository,
+    private val authRepo: AuthRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(StoreRegState())
@@ -124,6 +126,7 @@ class StoreRegistrationViewModel @Inject constructor(
                         _state.value = _state.value.copy(isSubmitting = true)
                     }
                     is com.nearby.app.data.network.NetworkResult.Success -> {
+                        authRepo.fetchProfile()
                         _state.value = _state.value.copy(
                             isSubmitting = false,
                             isSubmitted = true,
