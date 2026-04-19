@@ -43,4 +43,9 @@ class ShopRepository @Inject constructor(
     fun getShopQrCode(shopId: String) = safeApiCall {
         api.getShopQrCode(shopId)
     }
+
+    /** Get global trending products for discovery */
+    fun getTrendingProducts(limit: Int = 10) = safeApiCall {
+        api.getTrendingProducts(limit)
+    }
 }

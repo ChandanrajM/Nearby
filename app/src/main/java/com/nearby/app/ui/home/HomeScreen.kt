@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -152,6 +154,58 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.height(20.dp))
+        
+        // ── Trending Products ──────────────────────────────────────────
+        if (state.trendingProducts.isNotEmpty()) {
+            Text(
+                text = "Trending Near You",
+                style = MaterialTheme.typography.headlineSmall,
+                color = NearbyTextPrimary,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(state.trendingProducts) { product ->
+                    Box(
+                        modifier = Modifier
+                            .size(240.dp, 160.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(NearbyBackgroundLighter)
+                            .clickable { onShopClick(product.shopId) }
+                    ) {
+                        coil.compose.AsyncImage(
+                            model = product.imageUrl,
+                            contentDescription = product.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                        // Gradient Overlay for readability
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
+                                    )
+                                )
+                        )
+                        Text(
+                            text = product.name,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(12.dp),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
 
         // ── Categories header ──────────────────────────────────────────
         Text(

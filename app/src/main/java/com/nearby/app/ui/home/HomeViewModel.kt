@@ -12,12 +12,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.nearby.app.data.model.Product
+
 data class HomeUiState(
     val shops: List<Shop> = emptyList(),
     val filteredShops: List<Shop> = emptyList(),
+    val trendingProducts: List<Product> = emptyList(),
     val searchQuery: String = "",
     val selectedCategory: String = "All",
     val isLoading: Boolean = true,
+    val isTrendingLoading: Boolean = false,
     val categories: List<String> = listOf("All", "Fashion", "Grocery", "Electronics", "Books", "General"),
 )
 
@@ -33,11 +37,33 @@ class HomeViewModel @Inject constructor(
     init {
         loadLocation()
         loadShops()
+        loadTrendingProducts()
     }
 
     private fun loadLocation() {
         viewModelScope.launch {
             locationRepo.fetchCurrentLocation()
+        }
+    }
+
+    private fun loadTrendingProducts() {
+        viewModelScope.launch {
+            shopRepo.getTrendingProducts(10).collect { result ->
+                when (result) {
+                    is com.nearby.app.data.network.NetworkResult.Loading -> {
+                        _state.value = _state.value.copy(isTrendingLoading = true)
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Success -> {
+                        _state.value = _state.value.copy(
+                            trendingProducts = result.data,
+                            isTrendingLoading = false
+                        )
+                    }
+                    is com.nearby.app.data.network.NetworkResult.Error -> {
+                        _state.value = _state.value.copy(isTrendingLoading = false)
+                    }
+                }
+            }
         }
     }
 

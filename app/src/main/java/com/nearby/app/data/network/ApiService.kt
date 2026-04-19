@@ -90,6 +90,10 @@ interface ApiService {
     @POST("auth/google")
     suspend fun googleLogin(@Body request: GoogleLoginRequest): Response<AuthResponse>
 
+    /** Get global trending products for discovery feed */
+    @GET("products/trending")
+    suspend fun getTrendingProducts(@Query("limit") limit: Int = 10): Response<List<Product>>
+
 
     // ── Shops ─────────────────────────────
 
