@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,7 +78,7 @@ fun AddProductScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = NearbyTextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NearbyTextPrimary)
                 }
                 Text(
                     text = "Add Product",
@@ -221,7 +223,7 @@ fun AddProductScreen(
                     onValueChange = viewModel::onDescriptionChange,
                     label = "Description (optional)",
                     placeholder = "What makes this product special?",
-                    leadingIcon = Icons.Default.Notes,
+                    leadingIcon = Icons.AutoMirrored.Filled.Notes,
                     singleLine = false,
                     minLines = 3,
                 )
@@ -367,7 +369,7 @@ private fun CategoryDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NearbyCyan,
