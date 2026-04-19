@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearby.app.ui.account.AccountScreen
 import com.nearby.app.ui.account.AboutScreen
 import com.nearby.app.ui.account.EditProfileScreen
@@ -118,14 +119,19 @@ fun NearbyNavGraph(navController: NavHostController) {
         }
 
         // ── Store Manage (owner view) ──────────────────────────────────
-        composable(Routes.StoreManage.route) {
+        composable(
+            route = Routes.StoreManage.route,
+            arguments = listOf(navArgument("shopId") { type = NavType.StringType })
+        ) { backStack ->
+            val shopId = backStack.arguments?.getString("shopId") ?: ""
             StoreManageScreen(
+                shopId = shopId,
                 onBack = { navController.popBackStack() },
-                onViewQR = { shopId ->
-                    navController.navigate(Routes.StoreQR.createRoute(shopId))
+                onViewQR = { id ->
+                    navController.navigate(Routes.StoreQR.createRoute(id))
                 },
-                onAddProduct = { shopId ->
-                    navController.navigate(Routes.AddProduct.createRoute(shopId))
+                onAddProduct = { id ->
+                    navController.navigate(Routes.AddProduct.createRoute(id))
                 }
             )
         }
@@ -173,7 +179,7 @@ fun NearbyNavGraph(navController: NavHostController) {
 @Composable
 fun MainScreen(
     rootNavController: NavHostController,
-    viewModel: com.nearby.app.ui.account.AccountViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: com.nearby.app.ui.account.AccountViewModel = hiltViewModel()
 ) {
     val bottomNavController = rememberNavController()
     val currentRoute by bottomNavController.currentBackStackEntryAsState()
@@ -214,7 +220,10 @@ fun MainScreen(
             composable(Routes.Account.route) {
                 AccountScreen(
                     onOnlineStore      = { rootNavController.navigate(Routes.StoreRegistration.route) },
-                    onManageStore      = { rootNavController.navigate(Routes.StoreManage.route) },
+                    onManageStore      = {
+                        val shopId = userState.user?.shop_id ?: ""
+                        rootNavController.navigate(Routes.StoreManage.createRoute(shopId))
+                    },
                     onSignOut          = {
                         rootNavController.navigate(Routes.Login.route) {
                             popUpTo(0) { inclusive = true }

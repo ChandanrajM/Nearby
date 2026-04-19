@@ -20,7 +20,9 @@ sealed class Routes(val route: String) {
 
     // Shopkeeper
     object StoreRegistration : Routes("store_registration")
-    object StoreManage : Routes("store_manage")
+    object StoreManage : Routes("store_manage/{shopId}") {
+        fun createRoute(shopId: String) = "store_manage/$shopId"
+    }
     object StoreQR : Routes("store_qr/{shopId}") {
         fun createRoute(shopId: String) = "store_qr/$shopId"
     }

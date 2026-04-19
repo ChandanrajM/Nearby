@@ -22,6 +22,7 @@ import com.nearby.app.ui.theme.*
 
 @Composable
 fun StoreManageScreen(
+    shopId: String,
     onBack: () -> Unit,
     onViewQR: (String) -> Unit,
     onAddProduct: (String) -> Unit = {},

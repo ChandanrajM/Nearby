@@ -47,7 +47,8 @@ fun NearbyBottomBar(
         val list = baseBottomNavItems.toMutableList()
         if (user?.shopStatus == "approved") {
             // Insert Store item before Account
-            list.add(3, BottomNavItem(Routes.StoreManage.route, "Store", Icons.Filled.Storefront, Icons.Outlined.Storefront))
+            val shopId = user.shop_id ?: "unknown"
+            list.add(3, BottomNavItem(Routes.StoreManage.createRoute(shopId), "Store", Icons.Filled.Storefront, Icons.Outlined.Storefront))
         }
         list
     }

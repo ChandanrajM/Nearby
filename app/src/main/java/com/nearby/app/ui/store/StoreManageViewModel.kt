@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class StoreManageState(
-    val shopId: String = "shop-1",  // Replaced by actual auth user's shop ID
+    val shopId: String = "",
     val shopName: String = "",
     val products: List<Product> = emptyList(),
     val filteredProducts: List<Product> = emptyList(),
