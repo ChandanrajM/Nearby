@@ -1,13 +1,14 @@
 package com.nearby.app.ui.orders
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.nearby.app.data.model.Order
+import com.nearby.app.data.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.nearby.app.data.network.NetworkResult
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
