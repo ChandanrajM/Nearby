@@ -31,12 +31,28 @@ class ShopRepository @Inject constructor(
     /** Register a new shop */
     fun createShop(
         name: String,
-        category: String,
+        ownerName: String,
+        phone: String,
         address: String,
+        city: String,
         lat: Double,
-        lng: Double
+        lng: Double,
+        category: String,
+        gstNumber: String
     ) = safeApiCall {
-        api.createShop(CreateShopRequest(name, category, address, lat, lng))
+        api.createShop(
+            CreateShopRequest(
+                name = name,
+                ownerName = ownerName,
+                phone = phone,
+                address = address,
+                city = city,
+                latitude = lat,
+                longitude = lng,
+                category = category,
+                gstNumber = gstNumber
+            )
+        )
     }
 
     /** Get the QR code for a shop */

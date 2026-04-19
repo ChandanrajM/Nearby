@@ -31,10 +31,21 @@ data class RefreshTokenRequest(
 
 data class CreateShopRequest(
     @SerializedName("name") val name: String,
-    @SerializedName("category") val category: String,
+    @SerializedName("owner_name") val ownerName: String,
+    @SerializedName("phone") val phone: String,
     @SerializedName("address") val address: String,
-    @SerializedName("lat") val lat: Double,
-    @SerializedName("lng") val lng: Double
+    @SerializedName("city") val city: String,
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double,
+    @SerializedName("category") val category: String,
+    @SerializedName("gst_number") val gstNumber: String
+)
+
+
+data class UserUpdateProfileRequest(
+    @SerializedName("full_name") val fullName: String? = null,
+    @SerializedName("email") val email: String? = null,
+    @SerializedName("avatar_url") val avatarUrl: String? = null
 )
 
 data class CreateProductRequest(
@@ -93,6 +104,28 @@ interface ApiService {
     /** Get global trending products for discovery feed */
     @GET("products/trending")
     suspend fun getTrendingProducts(@Query("limit") limit: Int = 10): Response<List<Product>>
+
+
+    // ── Orders ────────────────────────────
+
+    /** Get orders for the current user */
+    @GET("orders")
+    suspend fun getOrders(@Query("user_id") userId: String): Response<List<com.nearby.app.data.model.Order>>
+
+    /** Get details for a specific order */
+    @GET("orders/{id}")
+    suspend fun getOrderDetails(@Path("id") orderId: String): Response<com.nearby.app.data.model.Order>
+
+
+    // ── User / Profile ────────────────────
+
+    /** Get the current user's profile */
+    @GET("auth/me")
+    suspend fun getUserProfile(): Response<com.nearby.app.data.model.User>
+
+    /** Update the user's profile */
+    @PATCH("auth/me")
+    suspend fun updateUserProfile(@Body request: UserUpdateProfileRequest): Response<com.nearby.app.data.model.User>
 
 
     // ── Shops ─────────────────────────────

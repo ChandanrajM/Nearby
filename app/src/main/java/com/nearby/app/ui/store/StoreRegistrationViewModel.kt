@@ -110,10 +110,14 @@ class StoreRegistrationViewModel @Inject constructor(
         viewModelScope.launch {
             shopRepo.createShop(
                 name = s.shopName,
-                category = s.selectedCategory.lowercase(),
+                ownerName = s.ownerName,
+                phone = s.phone,
                 address = s.address,
+                city = s.selectedCity,
                 lat = s.latitude,
-                lng = s.longitude
+                lng = s.longitude,
+                category = s.selectedCategory.lowercase(),
+                gstNumber = s.gstNumber
             ).collect { result ->
                 when (result) {
                     is com.nearby.app.data.network.NetworkResult.Loading -> {

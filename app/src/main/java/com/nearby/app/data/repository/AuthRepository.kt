@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onEach
+import com.nearby.app.data.network.UserUpdateProfileRequest
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -52,10 +54,32 @@ class AuthRepository @Inject constructor(
         }
 
     private fun handleLoginSuccess(response: com.nearby.app.data.network.AuthResponse, identifier: String) {
-        tokenManager.saveTokens(response.accessToken, response.refreshToken)
+        tokenManager.saveTokens(response.accessToken, response.refreshToken, response.userId)
         _isLoggedIn.value = true
-        // TODO: Fetch real user profile from backend
-        _currentUser.value = User(id = response.userId, phone = identifier, name = identifier)
+        fetchProfile()
+    }
+
+    /** Fetch the full user profile from the backend */
+    fun fetchProfile() {
+        if (!tokenManager.isLoggedIn()) return
+        
+        // This is a fire-and-forget for the state flow, but we could also return a Flow
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            safeApiCall { apiService.getUserProfile() }.collect { result ->
+                if (result is NetworkResult.Success) {
+                    _currentUser.value = result.data
+                }
+            }
+        }
+    }
+
+    /** Update user profile data */
+    fun updateProfile(name: String, email: String, avatarUrl: String? = null): Flow<NetworkResult<User>> = safeApiCall {
+        apiService.updateUserProfile(UserUpdateProfileRequest(fullName = name, email = email, avatarUrl = avatarUrl))
+    }.onEach { result ->
+        if (result is NetworkResult.Success) {
+            _currentUser.value = result.data
+        }
     }
 
 
@@ -66,4 +90,6 @@ class AuthRepository @Inject constructor(
     }
 
     fun getUser(): User? = _currentUser.value
+    
+    fun getUserId(): String? = _currentUser.value?.id ?: tokenManager.getUserId()
 }

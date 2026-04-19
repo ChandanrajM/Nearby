@@ -20,6 +20,7 @@ class TokenManager @Inject constructor(
         private const val PREFS_FILE = "nearby_secure_prefs"
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
+        private const val KEY_USER_ID = "user_id"
     }
 
     // Creates or opens the encrypted preferences file
@@ -37,12 +38,16 @@ class TokenManager @Inject constructor(
         )
     }
 
-    /** Save both tokens after login or token refresh */
-    fun saveTokens(accessToken: String, refreshToken: String) {
-        prefs.edit()
+    /** Save tokens and user ID after login */
+    fun saveTokens(accessToken: String, refreshToken: String, userId: String? = null) {
+        val editor = prefs.edit()
             .putString(KEY_ACCESS_TOKEN, accessToken)
             .putString(KEY_REFRESH_TOKEN, refreshToken)
-            .apply()
+        
+        if (userId != null) {
+            editor.putString(KEY_USER_ID, userId)
+        }
+        editor.apply()
     }
 
     /** Returns the access token, or null if the user is not logged in */
@@ -51,11 +56,15 @@ class TokenManager @Inject constructor(
     /** Returns the refresh token, or null if the user is not logged in */
     fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
 
-    /** Call this on logout — wipes both tokens */
+    /** Returns the saved user ID */
+    fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
+
+    /** Call this on logout — wipes tokens and user ID */
     fun clearTokens() {
         prefs.edit()
             .remove(KEY_ACCESS_TOKEN)
             .remove(KEY_REFRESH_TOKEN)
+            .remove(KEY_USER_ID)
             .apply()
     }
 

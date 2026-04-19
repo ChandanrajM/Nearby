@@ -16,17 +16,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nearby.app.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  EDIT PROFILE SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
 
 @Composable
-fun EditProfileScreen(onBack: () -> Unit) {
-    var name by remember { mutableStateOf("User") }
-    var phone by remember { mutableStateOf("+91 9999999999") }
-    var email by remember { mutableStateOf("") }
-    var isSaving by remember { mutableStateOf(false) }
+fun EditProfileScreen(
+    onBack: () -> Unit,
+    viewModel: AccountViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    
+    var name by remember(state.user) { mutableStateOf(state.user?.name ?: "") }
+    var email by remember(state.user) { mutableStateOf(state.user?.email ?: "") }
+    var phone by remember(state.user) { mutableStateOf(state.user?.phone ?: "") }
 
     Column(
         modifier = Modifier
@@ -72,13 +79,24 @@ fun EditProfileScreen(onBack: () -> Unit) {
             AccountFormField(value = email, onValueChange = { email = it }, label = "Email (optional)", icon = Icons.Default.Email)
 
             Spacer(Modifier.height(8.dp))
+            
+            if (state.error != null) {
+                Text(state.error!!, color = NearbyError, style = MaterialTheme.typography.bodySmall)
+            }
+            if (state.successMessage != null) {
+                Text(state.successMessage!!, color = NearbyGreen, style = MaterialTheme.typography.bodySmall)
+            }
+
             Button(
-                onClick = { isSaving = true },
+                onClick = { 
+                    viewModel.updateProfile(name, email)
+                },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NearbyCyan, contentColor = NearbyBlack),
+                enabled = !state.isSaving
             ) {
-                if (isSaving) {
+                if (state.isSaving) {
                     CircularProgressIndicator(Modifier.size(18.dp), color = NearbyBlack, strokeWidth = 2.dp)
                 } else {
                     Text("Save Changes", fontWeight = FontWeight.Bold)
