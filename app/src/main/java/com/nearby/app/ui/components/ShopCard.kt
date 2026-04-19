@@ -40,14 +40,9 @@ fun ShopCard(
                     .background(NearbyCardLight),
                 contentAlignment = Alignment.Center,
             ) {
-                if (shop.image_url.isNotEmpty()) {
-                    AsyncImage(
-                        model = shop.image_url,
-                        contentDescription = shop.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
+                // No image_url in Shop model, just showing a placeholder
+                if (false) {
+                    // Placeholder for future banner feature
                     Text(
                         text = shop.name.take(2).uppercase(),
                         style = MaterialTheme.typography.displayMedium,
@@ -69,10 +64,10 @@ fun ShopCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = NearbyTextSecondary,
                 )
-                if (shop.distance_km != null) {
+                if (shop.distanceKm != null) {
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "${shop.distance_km} km away",
+                        text = "${shop.distanceKm} km away",
                         style = MaterialTheme.typography.labelSmall,
                         color = NearbyGreen,
                     )

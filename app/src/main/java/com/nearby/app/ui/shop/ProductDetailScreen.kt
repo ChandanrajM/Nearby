@@ -70,9 +70,10 @@ fun ProductDetailScreen(
                 .background(NearbyCardLight),
             contentAlignment = Alignment.Center,
         ) {
-            if (product.image_url.isNotEmpty()) {
+            val displayImage = product.processedImageUrl ?: product.imageUrl
+            if (displayImage.isNotEmpty()) {
                 AsyncImage(
-                    model = product.image_url,
+                    model = displayImage,
                     contentDescription = product.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
@@ -84,22 +85,8 @@ fun ProductDetailScreen(
                     color = NearbyCyan.copy(alpha = 0.2f),
                 )
             }
-            if (product.is_featured) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = NearbyPink,
-                ) {
-                    Text(
-                        text = "LIVE DROP",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = NearbyTextPrimary,
-                    )
-                }
-            }
+
+            // Removed isFeatured badge as it's not in the Product model anymore.
         }
 
         Spacer(Modifier.height(24.dp))
@@ -119,18 +106,18 @@ fun ProductDetailScreen(
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                text = product.description.ifEmpty { "No description available." },
+                text = "Product in category: ${product.category ?: "Uncategorized"}. \nExperience the best from your local shops.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = NearbyTextSecondary,
                 lineHeight = 24.sp,
             )
             Spacer(Modifier.height(8.dp))
             Row {
-                Text("Stock: ", style = MaterialTheme.typography.bodyMedium, color = NearbyTextTertiary)
+                Text("Status: ", style = MaterialTheme.typography.bodyMedium, color = NearbyTextTertiary)
                 Text(
-                    text = if (product.stock > 0) "${product.stock} available" else "Out of stock",
+                    text = if (product.isAvailable) "Available" else "Out of stock",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (product.stock > 0) NearbyGreen else NearbyError,
+                    color = if (product.isAvailable) NearbyGreen else NearbyError,
                 )
             }
 
@@ -147,7 +134,7 @@ fun ProductDetailScreen(
                     containerColor = NearbyCyan,
                     contentColor = NearbyBlack,
                 ),
-                enabled = product.stock > 0,
+                enabled = product.isAvailable,
             ) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = null)
                 Spacer(Modifier.width(8.dp))

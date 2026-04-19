@@ -172,8 +172,8 @@ fun StoreManageScreen(
         EditProductDialog(
             product = product,
             onDismiss = { productToEdit = null },
-            onUpdate = { name, price, desc, stock ->
-                viewModel.updateProduct(product.id, name, price, desc, stock)
+            onUpdate = { name, price, isAvailable ->
+                viewModel.updateProduct(product.id, name, price, isAvailable)
                 productToEdit = null
             },
         )
@@ -240,12 +240,11 @@ private fun QuickAction(
 private fun EditProductDialog(
     product: Product,
     onDismiss: () -> Unit,
-    onUpdate: (String, String, String, String) -> Unit,
+    onUpdate: (String, String, Boolean) -> Unit,
 ) {
     var name by remember(product.id) { mutableStateOf(product.name) }
     var price by remember(product.id) { mutableStateOf(product.price.toString()) }
-    var description by remember(product.id) { mutableStateOf(product.description) }
-    var stock by remember(product.id) { mutableStateOf(product.stock.toString()) }
+    var isAvailable by remember(product.id) { mutableStateOf(product.isAvailable) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -258,8 +257,6 @@ private fun EditProductDialog(
                 listOf(
                     Triple("Name", name) { v: String -> name = v },
                     Triple("Price (₹)", price) { v: String -> price = v },
-                    Triple("Stock", stock) { v: String -> stock = v },
-                    Triple("Description", description) { v: String -> description = v },
                 ).forEach { (label, value, onChange) ->
                     OutlinedTextField(
                         value = value,
@@ -276,11 +273,20 @@ private fun EditProductDialog(
                         ),
                     )
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isAvailable,
+                        onCheckedChange = { isAvailable = it },
+                        colors = CheckboxDefaults.colors(checkedColor = NearbyCyan)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Is Available", color = NearbyTextPrimary)
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onUpdate(name, price, description, stock) },
+                onClick = { onUpdate(name, price, isAvailable) },
                 colors = ButtonDefaults.buttonColors(containerColor = NearbyCyan, contentColor = NearbyBlack),
             ) { Text("Save Changes", fontWeight = FontWeight.Bold) }
         },

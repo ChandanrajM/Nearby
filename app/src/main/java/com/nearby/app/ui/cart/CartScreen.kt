@@ -142,9 +142,9 @@ private fun CartItemCard(
                     .background(NearbyCardLight),
                 contentAlignment = Alignment.Center,
             ) {
-                if (item.product.image_url.isNotEmpty()) {
+                if (item.product.imageUrl.isNotEmpty()) {
                     AsyncImage(
-                        model = item.product.image_url,
+                        model = item.product.imageUrl,
                         contentDescription = item.product.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),

@@ -40,9 +40,9 @@ fun ProductCard(
                     .background(NearbyCardLight),
                 contentAlignment = Alignment.Center,
             ) {
-                if (product.image_url.isNotEmpty()) {
+                if (product.imageUrl.isNotEmpty()) {
                     AsyncImage(
-                        model = product.image_url,
+                        model = product.imageUrl,
                         contentDescription = product.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -54,23 +54,7 @@ fun ProductCard(
                         color = NearbyCyan.copy(alpha = 0.5f),
                     )
                 }
-                // Featured badge
-                if (product.is_featured) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        color = NearbyPink,
-                    ) {
-                        Text(
-                            text = "LIVE DROP",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = NearbyTextPrimary,
-                        )
-                    }
-                }
+                // Featured badge removed since isFeatured is no longer in Product
             }
             // Name + price
             Row(

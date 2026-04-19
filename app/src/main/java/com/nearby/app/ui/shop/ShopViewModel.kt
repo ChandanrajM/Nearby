@@ -73,7 +73,7 @@ class ShopViewModel @Inject constructor(
         val all = _state.value.products
         val filtered = if (category == "All") all
         else all.filter {
-            it.category.replace("_", " ").equals(category, ignoreCase = true)
+            it.category?.replace("_", " ")?.equals(category, ignoreCase = true) == true
         }
         _state.value = _state.value.copy(filteredProducts = filtered)
     }

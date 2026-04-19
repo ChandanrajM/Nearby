@@ -56,7 +56,7 @@ fun ShopScreen(
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = NearbyTextPrimary,
             )
-            if (state.shop?.status == "approved") {
+            if (state.shop?.isOpen == true) {
                 Spacer(Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
@@ -89,8 +89,8 @@ fun ShopScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Hero product (featured) — spans full width
-            val featured = state.filteredProducts.find { it.is_featured }
+            // Hero product (featured) — spans full width, fallback to the first item
+            val featured = state.filteredProducts.firstOrNull()
             if (featured != null) {
                 item(span = { GridItemSpan(2) }) {
                     Card(
@@ -102,9 +102,10 @@ fun ShopScreen(
                         onClick = { onProductClick(featured.id) },
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            if (featured.image_url.isNotEmpty()) {
+                            val displayImage = featured.processedImageUrl ?: featured.imageUrl
+                            if (displayImage.isNotEmpty()) {
                                 AsyncImage(
-                                    model = featured.image_url,
+                                    model = displayImage,
                                     contentDescription = featured.name,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize(),
@@ -123,21 +124,7 @@ fun ShopScreen(
                                     )
                                 }
                             }
-                            // "LIVE DROP" badge
-                            Surface(
-                                modifier = Modifier
-                                    .padding(14.dp)
-                                    .align(Alignment.TopStart),
-                                shape = RoundedCornerShape(8.dp),
-                                color = NearbyPink,
-                            ) {
-                                Text(
-                                    text = "LIVE DROP",
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = NearbyTextPrimary,
-                                )
-                            }
+                            // Removed LIVE DROP badge
                             // Name + Price overlay
                             Row(
                                 modifier = Modifier
@@ -165,7 +152,7 @@ fun ShopScreen(
             }
 
             // Regular product cards (2-col grid)
-            val regularProducts = state.filteredProducts.filter { !it.is_featured }
+            val regularProducts = state.filteredProducts.drop(1)
             items(regularProducts, key = { it.id }) { product ->
                 ProductCard(
                     product = product,
