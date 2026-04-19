@@ -87,8 +87,9 @@ interface ApiService {
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<AuthResponse>
 
     /** Google Login — returns JWT tokens on success */
-    @POST("/auth/google")
+    @POST("auth/google")
     suspend fun googleLogin(@Body request: GoogleLoginRequest): Response<AuthResponse>
+
 
     // ── Shops ─────────────────────────────
 

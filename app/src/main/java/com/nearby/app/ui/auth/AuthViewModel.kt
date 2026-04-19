@@ -111,8 +111,18 @@ class AuthViewModel @Inject constructor(
                 val result = credentialManager.getCredential(context = context, request = request)
                 
                 val credential = result.credential
-                if (credential is com.google.android.libraries.identity.googleid.GoogleIdTokenCredential) {
-                    val idToken = credential.idToken
+                
+                val googleIdTokenCredential = when {
+                    credential is com.google.android.libraries.identity.googleid.GoogleIdTokenCredential -> credential
+                    credential is androidx.credentials.CustomCredential && 
+                    credential.type == com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL -> {
+                        com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data)
+                    }
+                    else -> null
+                }
+
+                if (googleIdTokenCredential != null) {
+                    val idToken = googleIdTokenCredential.idToken
                     
                     authRepo.loginWithGoogle(idToken).collect { networkResult ->
                         when (networkResult) {
@@ -129,8 +139,12 @@ class AuthViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    _state.value = _state.value.copy(isLoading = false, error = "Unexpected credential type")
+                    _state.value = _state.value.copy(
+                        isLoading = false, 
+                        error = "Unexpected credential type: ${credential.type}"
+                    )
                 }
+
             } catch (e: GetCredentialException) {
                 _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Failed to sign in")
             } catch (e: Exception) {
