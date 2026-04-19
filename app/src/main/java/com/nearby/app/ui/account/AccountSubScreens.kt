@@ -343,7 +343,7 @@ fun HelpSupportScreen(onBack: () -> Unit) {
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = NearbyCyan, contentColor = NearbyBlack),
                 ) {
-                    Icon(Icons.Default.Chat, null, Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Filled.Chat, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Chat with Support", fontWeight = FontWeight.Bold)
                 }
@@ -450,7 +450,7 @@ private fun AccountSubTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, "Back", tint = NearbyTextPrimary)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NearbyTextPrimary)
         }
         Text(
             text = title,

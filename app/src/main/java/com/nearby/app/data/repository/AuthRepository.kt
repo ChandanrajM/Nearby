@@ -11,10 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onEach
-import com.nearby.app.data.network.UserUpdateProfileRequest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +24,7 @@ class AuthRepository @Inject constructor(
     private val apiService: ApiService,
     private val tokenManager: TokenManager
 ) {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
@@ -64,9 +66,9 @@ class AuthRepository @Inject constructor(
     /** Fetch the full user profile from the backend */
     fun fetchProfile() {
         if (!tokenManager.isLoggedIn()) return
-        
-        // This is a fire-and-forget for the state flow, but we could also return a Flow
-        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+
+        // This is a fire-and-forget for the state flow
+        serviceScope.launch {
             safeApiCall { apiService.getUserProfile() }.collect { result ->
                 if (result is NetworkResult.Success) {
                     _currentUser.value = result.data
