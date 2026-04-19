@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,6 +58,33 @@ fun ScannerScreen(
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
         if (ok) hasCamPermission = true
         else permLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    // ── Gallery Picker ──────────────────────────────────────────
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            val inputImage = InputImage.fromFilePath(context, it)
+            val scanner = BarcodeScanning.getClient()
+            scanner.process(inputImage)
+                .addOnSuccessListener { barcodes ->
+                    for (barcode in barcodes) {
+                        val value = barcode.rawValue ?: continue
+                        val shopId = extractShopId(value)
+                        if (shopId != null && !scanned) {
+                            scanned = true
+                            onScanResult(shopId)
+                            return@addOnSuccessListener
+                        }
+                    }
+                    // If no valid QR found in image
+                    Log.d("ScannerScreen", "No valid QR code found in selected image")
+                }
+                .addOnFailureListener { e ->
+                    Log.e("ScannerScreen", "Gallery decode failed", e)
+                }
+        }
     }
 
     // Scan-line animation (top to bottom)
@@ -200,19 +228,41 @@ fun ScannerScreen(
             )
         }
 
-        // ── Bottom hint ─────────────────────────────────────────────────
-        Box(
+        // ── Bottom hint & Gallery ───────────────────────────────────────
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 60.dp)
-                .background(NearbyOverlay, RoundedCornerShape(12.dp))
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(bottom = 60.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "Point your camera at a shop's QR code",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
-            )
+            // Gallery Button
+            Button(
+                onClick = { galleryLauncher.launch("image/*") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = NearbyOverlay,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.wrapContentSize(),
+            ) {
+                Icon(Icons.Default.PhotoLibrary, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Upload from Gallery", style = MaterialTheme.typography.labelLarge)
+            }
+
+            Box(
+                modifier = Modifier
+                    .background(NearbyOverlay.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    text = "Point camera at QR or upload an image",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                )
+            }
         }
     }
 }
