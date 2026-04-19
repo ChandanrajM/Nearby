@@ -182,7 +182,9 @@ interface ApiService {
     /** Upload an image file for a product */
     @Multipart
     @POST("upload")
-    suspend fun uploadImage(
-        @Part file: okhttp3.MultipartBody.Part
-    ): Response<UploadResponse>
+    suspend fun uploadImage(@Part file: okhttp3.MultipartBody.Part): Response<UploadResponse>
+
+    /** Trigger AI enhancement preview */
+    @POST("ai/enhance")
+    suspend fun triggerAiEnhance(@Body body: Map<String, String>): Response<Map<String, Any>>
 }

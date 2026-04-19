@@ -138,7 +138,7 @@ fun AddProductScreen(
                         AiEnhanceButton(
                             isEnhancing = state.isEnhancing,
                             isEnhanced = state.isEnhanced,
-                            onClick = { viewModel.enhanceImage() },
+                            onClick = { viewModel.enhanceImage(shopId) },
                         )
                     }
                 } else {

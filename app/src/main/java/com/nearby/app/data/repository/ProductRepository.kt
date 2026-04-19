@@ -46,4 +46,9 @@ class ProductRepository @Inject constructor(
     fun uploadImage(file: okhttp3.MultipartBody.Part) = safeApiCall {
         api.uploadImage(file)
     }
+
+    /** Trigger real AI enhancement in background */
+    fun triggerAiEnhance(imageUrl: String, shopId: String) = safeApiCall {
+        api.triggerAiEnhance(mapOf("image_url" to imageUrl, "shop_id" to shopId))
+    }
 }

@@ -29,7 +29,6 @@ fun StoreManageScreen(
     viewModel: StoreManageViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-    val shopId = state.shopId
 
     LaunchedEffect(shopId) {
         viewModel.loadStore(shopId)

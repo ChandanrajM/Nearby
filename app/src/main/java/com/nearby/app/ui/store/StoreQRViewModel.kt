@@ -27,27 +27,16 @@ class StoreQRViewModel @Inject constructor(
     val state: StateFlow<StoreQRState> = _state.asStateFlow()
 
     fun loadQrCode(shopId: String) {
-        viewModelScope.launch {
-            shopRepo.getShopQrCode(shopId).collect { result ->
-                when (result) {
-                    is NetworkResult.Loading -> {
-                        _state.value = _state.value.copy(isLoading = true, error = null)
-                    }
-                    is NetworkResult.Success -> {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            qrImageUrl = result.data.qrImageUrl,
-                            deepLink = result.data.deepLink
-                        )
-                    }
-                    is NetworkResult.Error -> {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            error = result.message
-                        )
-                    }
-                }
-            }
-        }
+        // The backend returns a raw PNG, so we don't need a Retrofit JSON call.
+        // We can just construct the URL and let Coil fetch and cache it natively!
+        val qrUrl = com.nearby.app.BuildConfig.BASE_URL + "shops/$shopId/qr"
+        val link = "https://nearby.app/shop/$shopId"
+        
+        _state.value = _state.value.copy(
+            isLoading = false,
+            qrImageUrl = qrUrl,
+            deepLink = link,
+            error = null
+        )
     }
 }

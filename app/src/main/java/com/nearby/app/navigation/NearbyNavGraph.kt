@@ -192,10 +192,14 @@ fun MainScreen(
                 currentRoute = currentDestination ?: Routes.Home.route,
                 user = userState.user,
                 onNavigate = { route ->
-                    bottomNavController.navigate(route) {
-                        popUpTo(Routes.Home.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+                    if (route.startsWith("store_manage")) {
+                        rootNavController.navigate(route)
+                    } else {
+                        bottomNavController.navigate(route) {
+                            popUpTo(Routes.Home.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 }
             )

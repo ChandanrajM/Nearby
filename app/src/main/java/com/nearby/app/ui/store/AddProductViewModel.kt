@@ -61,22 +61,53 @@ class AddProductViewModel @Inject constructor(
     }
 
     /**
-     * AI Enhance: In a production app this would call an image-processing API
-     * (e.g. remove background, auto-colour-correct, add white background).
-     * Here we simulate the async operation with a 2-second delay.
-     * The enhanced URI is the same image, but you could replace it with
-     * a real Cloudinary / Imgix transform URL.
+     * AI Enhance: Uploads the image to get a URL, then triggers the backend AI service.
      */
-    fun enhanceImage() {
+    fun enhanceImage(shopId: String) {
         val uri = _state.value.selectedImageUri ?: return
+        
         viewModelScope.launch {
-            _state.value = _state.value.copy(isEnhancing = true)
-            delay(2200) // Simulated AI processing time
-            _state.value = _state.value.copy(
-                isEnhancing = false,
-                isEnhanced = true,
-                enhancedImageUri = uri, // In production: replace with enhanced image URL
-            )
+            _state.value = _state.value.copy(isEnhancing = true, error = null)
+            
+            try {
+                // 1. Upload to get a public URL first
+                val stream = context.contentResolver.openInputStream(uri)
+                val bytes = stream?.readBytes()
+                stream?.close()
+                
+                if (bytes == null) throw Exception("Could not read image bytes")
+                
+                val requestBody = bytes.toRequestBody("image/*".toMediaTypeOrNull())
+                val part = MultipartBody.Part.createFormData("file", "upload.jpg", requestBody)
+                
+                var remoteUrl = ""
+                productRepo.uploadImage(part).collect { res ->
+                    if (res is com.nearby.app.data.network.NetworkResult.Success) {
+                        remoteUrl = res.data.imageUrl
+                    }
+                }
+                
+                if (remoteUrl.isEmpty()) throw Exception("Image upload failed")
+                
+                // 2. Trigger AI task on backend
+                productRepo.triggerAiEnhance(remoteUrl, shopId).collect { res ->
+                    when (res) {
+                        is com.nearby.app.data.network.NetworkResult.Success -> {
+                            _state.value = _state.value.copy(
+                                isEnhancing = false,
+                                isEnhanced = true,
+                                error = "AI Task started! Enhancement will be ready soon."
+                            )
+                        }
+                        is com.nearby.app.data.network.NetworkResult.Error -> {
+                            _state.value = _state.value.copy(isEnhancing = false, error = res.message)
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isEnhancing = false, error = "Enhance failed: ${e.message}")
+            }
         }
     }
 
