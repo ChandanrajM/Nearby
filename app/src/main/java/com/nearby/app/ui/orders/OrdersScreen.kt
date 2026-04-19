@@ -14,16 +14,13 @@ import androidx.compose.ui.unit.dp
 import com.nearby.app.data.model.Order
 import com.nearby.app.ui.theme.*
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
-fun OrdersScreen() {
-    // Mock orders for now — will be replaced when backend has orders endpoint
-    val orders = remember {
-        listOf(
-            Order(id = "ord-1", shop_name = "Acme Vintage", total = 365.0, status = "delivered", created_at = "2026-04-18"),
-            Order(id = "ord-2", shop_name = "Fresh Mart", total = 120.0, status = "placed", created_at = "2026-04-17"),
-            Order(id = "ord-3", shop_name = "TechZone", total = 2499.0, status = "confirmed", created_at = "2026-04-16"),
-        )
-    }
+fun OrdersScreen(viewModel: OrdersViewModel = hiltViewModel()) {
+    val orders by viewModel.orders.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Column(
         modifier = Modifier
@@ -38,7 +35,18 @@ fun OrdersScreen() {
             modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 16.dp),
         )
 
-        if (orders.isEmpty()) {
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NearbyCyan)
+            }
+        } else if (error != null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "Error: $error", color = NearbyError)
+            }
+        } else if (orders.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -54,7 +62,10 @@ fun OrdersScreen() {
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(orders, key = { it.id }) { order ->
+                items(
+                    items = orders.distinctBy { it.id }, // Ensure no duplicates
+                    key = { it.id }
+                ) { order ->
                     OrderCard(order)
                 }
                 item { Spacer(Modifier.height(16.dp)) }

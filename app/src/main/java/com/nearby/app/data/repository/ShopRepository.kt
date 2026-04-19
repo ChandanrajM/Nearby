@@ -47,8 +47,8 @@ class ShopRepository @Inject constructor(
                 phone = phone,
                 address = address,
                 city = city,
-                latitude = lat,
-                longitude = lng,
+                lat = lat,
+                lng = lng,
                 category = category,
                 gstNumber = gstNumber
             )

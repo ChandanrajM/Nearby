@@ -35,8 +35,8 @@ data class CreateShopRequest(
     @SerializedName("phone") val phone: String,
     @SerializedName("address") val address: String,
     @SerializedName("city") val city: String,
-    @SerializedName("latitude") val latitude: Double,
-    @SerializedName("longitude") val longitude: Double,
+    @SerializedName("lat") val lat: Double,
+    @SerializedName("lng") val lng: Double,
     @SerializedName("category") val category: String,
     @SerializedName("gst_number") val gstNumber: String
 )

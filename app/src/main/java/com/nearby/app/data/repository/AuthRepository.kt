@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.collect
+import com.nearby.app.data.network.UserUpdateProfileRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
