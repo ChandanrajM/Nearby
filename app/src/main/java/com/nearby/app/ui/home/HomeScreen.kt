@@ -173,7 +173,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .size(240.dp, 160.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(NearbyBackgroundLighter)
+                            .background(NearbySurfaceLight)
                             .clickable { onShopClick(product.shopId) }
                     ) {
                         coil.compose.AsyncImage(
