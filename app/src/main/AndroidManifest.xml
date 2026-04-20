@@ -64,6 +64,17 @@
                     android:host="nearby.app"
                     android:pathPrefix="/s/" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Custom scheme backup: nearby://shop/{shopId} -->
+                <data
+                    android:scheme="nearby"
+                    android:host="shop" />
+            </intent-filter>
         </activity>
     </application>
 
