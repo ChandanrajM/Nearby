@@ -25,11 +25,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ShopStoreViewModel @Inject constructor(
-    private val shopRepository: ShopRepository
+    private val shopRepository: ShopRepository,
+    private val cartRepository: com.nearby.app.data.repository.CartRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShopUiState())
     val uiState: StateFlow<ShopUiState> = _uiState.asStateFlow()
+
+    private var rawProducts: List<com.nearby.app.data.model.Product> = emptyList()
 
     // ── Load shop + products ──────────────────────────────────────
 
@@ -78,6 +81,7 @@ class ShopStoreViewModel @Inject constructor(
                     is NetworkResult.Loading -> Unit
 
                     is NetworkResult.Success -> {
+                        rawProducts = result.data
                         val products = result.data.map { product ->
                             ProductDisplayModel(
                                 id = product.id,
@@ -125,5 +129,10 @@ class ShopStoreViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun addToCart(productId: String) {
+        val product = rawProducts.find { it.id == productId } ?: return
+        cartRepository.addToCart(product)
     }
 }

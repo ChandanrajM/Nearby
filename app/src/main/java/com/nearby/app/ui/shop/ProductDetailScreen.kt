@@ -6,7 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,26 +19,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.nearby.app.ui.theme.*
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
 
 @Composable
 fun ProductDetailScreen(
     shopId: String,
     productId: String,
     onBack: () -> Unit,
-    viewModel: ShopViewModel = hiltViewModel(),
+    viewModel: ShopStoreViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(shopId) {
         viewModel.loadShop(shopId)
     }
 
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.uiState.collectAsState()
     val product = state.products.find { it.id == productId }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NearbyBackground)
+            .background(NearbyColors.Background)
             .verticalScroll(rememberScrollState()),
     ) {
         // ── Back button ────────────────────────────────────────────────
@@ -49,13 +50,17 @@ fun ProductDetailScreen(
                 .padding(12.dp),
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, "Back", tint = NearbyTextPrimary)
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = NearbyColors.TextPrimary
+                )
             }
         }
 
         if (product == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = NearbyCyan)
+            Box(Modifier.fillMaxSize().height(400.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NearbyColors.PriceYellow)
             }
             return
         }
@@ -64,89 +69,84 @@ fun ProductDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(320.dp)
+                .height(360.dp)
                 .padding(horizontal = 16.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(NearbyCardLight),
+                .background(NearbyColors.Surface),
             contentAlignment = Alignment.Center,
         ) {
-            val displayImage = product.processedImageUrl ?: product.imageUrl
-            if (displayImage.isNotEmpty()) {
-                AsyncImage(
-                    model = displayImage,
-                    contentDescription = product.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Text(
-                    text = product.name.take(3).uppercase(),
-                    style = MaterialTheme.typography.displayLarge,
-                    color = NearbyCyan.copy(alpha = 0.2f),
-                )
-            }
-
-            // Removed isFeatured badge as it's not in the Product model anymore.
+            AsyncImage(
+                model = product.displayImageUrl,
+                contentDescription = product.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         Spacer(Modifier.height(24.dp))
 
         // ── Product Info ───────────────────────────────────────────────
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Text(
                 text = product.name,
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                color = NearbyTextPrimary,
+                style = NearbyType.HeroProductName.copy(fontSize = 24.sp),
+                color = NearbyColors.TextPrimary,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "₹${product.price.toInt()}",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = NearbyYellow,
+                text = product.formattedPrice,
+                style = NearbyType.HeroPrice.copy(fontSize = 22.sp),
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "Product in category: ${product.category ?: "Uncategorized"}. \nExperience the best from your local shops.",
+                text = "Product in category: ${product.category}. \nExperience the best from your local shops expertly curated for you.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = NearbyTextSecondary,
+                color = NearbyColors.TextSecondary,
                 lineHeight = 24.sp,
             )
-            Spacer(Modifier.height(8.dp))
-            Row {
-                Text("Status: ", style = MaterialTheme.typography.bodyMedium, color = NearbyTextTertiary)
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (product.isAvailable) NearbyColors.OnlineDot else NearbyColors.OfflineDot)
+                )
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = if (product.isAvailable) "Available" else "Out of stock",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (product.isAvailable) NearbyGreen else NearbyError,
+                    style = NearbyType.Distance,
+                    color = if (product.isAvailable) NearbyColors.TextSecondary else NearbyColors.TextTertiary,
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
             // ── Add to Cart Button ─────────────────────────────────────
             Button(
-                onClick = { viewModel.addToCart(product) },
+                onClick = { viewModel.addToCart(product.id) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(60.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = NearbyCyan,
-                    contentColor = NearbyBlack,
+                    containerColor = NearbyColors.PriceYellow,
+                    contentColor = NearbyColors.Background,
                 ),
                 enabled = product.isAvailable,
             ) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(12.dp))
                 Text(
-                    "Add to Cart",
+                    "ADD TO CART",
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
+                        letterSpacing = 1.sp
                     ),
                 )
             }
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(48.dp))
         }
     }
 }
