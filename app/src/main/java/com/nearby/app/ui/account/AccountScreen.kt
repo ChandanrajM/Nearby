@@ -9,22 +9,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nearby.app.ui.theme.*
+import androidx.compose.ui.unit.sp
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
 
 @Composable
 fun AccountScreen(
-    onOnlineStore: () -> Unit,
-    onManageStore: () -> Unit,
-    onSignOut: () -> Unit,
+    onLogout: () -> Unit,
+    onManageStore: (String) -> Unit,
+    onRegisterStore: () -> Unit,
     onEditProfile: () -> Unit = {},
     onNotifications: () -> Unit = {},
     onSavedAddresses: () -> Unit = {},
@@ -42,105 +46,118 @@ fun AccountScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NearbyBackground)
+            .background(NearbyColors.Background)
             .verticalScroll(rememberScrollState()),
     ) {
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(40.dp))
 
         // ── Profile Section ────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(100.dp)
                     .clip(CircleShape)
-                    .background(NearbyCardLight),
+                    .background(NearbyColors.Surface),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "U",
-                    style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-                    color = NearbyCyan,
+                    text = user?.name?.take(1)?.uppercase() ?: "U",
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = NearbyColors.PriceYellow
+                    ),
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = user?.name?.takeIf { it.isNotBlank() } ?: "User",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = NearbyTextPrimary,
+                style = NearbyType.HeroProductName.copy(fontSize = 22.sp),
+                color = NearbyColors.TextPrimary,
             )
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = user?.phone ?: "",
                 style = MaterialTheme.typography.bodyMedium,
-                color = NearbyTextSecondary,
+                color = NearbyColors.TextTertiary,
             )
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(40.dp))
 
-        // ── Online Store Section ───────────────────────────────────────────
+        // ── Store Section ──────────────────────────────────────────────────
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = NearbyCard),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = NearbyColors.Surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Storefront, "Store", tint = NearbyCyan, modifier = Modifier.size(28.dp))
+                    Icon(
+                        Icons.Default.Storefront, 
+                        "Store", 
+                        tint = NearbyColors.PriceYellow, 
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "Online Store",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = NearbyTextPrimary,
+                        text = "Your Business",
+                        style = NearbyType.CardTitle,
+                        color = NearbyColors.TextPrimary,
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
 
                 when {
                     storeApproved -> {
                         Text(
-                            text = "Your store is live! Manage your products and view your QR code.",
+                            text = "Your store is live! Reach customers nearby and manage your inventory easily.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = NearbyTextSecondary,
+                            color = NearbyColors.TextSecondary,
+                            lineHeight = 20.sp
                         )
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(20.dp))
                         Button(
-                            onClick = onManageStore,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NearbyGreen),
+                            onClick = { user.shop_id?.let { onManageStore(it) } },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = NearbyColors.OnlineDot.copy(alpha = 0.15f),
+                                contentColor = NearbyColors.OnlineDot
+                            ),
                         ) {
                             Text("Manage Store", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                     storeUnderReview -> {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = NearbyYellow.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(16.dp),
+                            color = NearbyColors.PriceYellow.copy(alpha = 0.08f),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Default.Lock, "Under Review", tint = NearbyYellow)
-                                Spacer(Modifier.width(12.dp))
+                                Icon(Icons.Default.Pending, "Under Review", tint = NearbyColors.PriceYellow)
+                                Spacer(Modifier.width(16.dp))
                                 Column {
                                     Text(
-                                        "Under Review",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = NearbyYellow,
+                                        "Verification Pending",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = NearbyColors.PriceYellow,
                                     )
                                     Text(
-                                        "Your store registration is being verified by admin.",
+                                        "Our team is reviewing your store application.",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = NearbyTextSecondary,
+                                        color = NearbyColors.TextSecondary,
                                     )
                                 }
                             }
@@ -148,60 +165,64 @@ fun AccountScreen(
                     }
                     else -> {
                         Text(
-                            text = "Start selling online! Register your shop and reach customers nearby.",
+                            text = "Sell your products to thousands of neighbors. Register your local shop now.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = NearbyTextSecondary,
+                            color = NearbyColors.TextSecondary,
+                            lineHeight = 20.sp
                         )
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(20.dp))
                         Button(
-                            onClick = onOnlineStore,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NearbyCyan, contentColor = NearbyBlack),
+                            onClick = onRegisterStore,
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = NearbyColors.PriceYellow,
+                                contentColor = NearbyColors.Background
+                            ),
                         ) {
-                            Text("Register Your Store", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                            Text("Start Selling Online", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                 }
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // ── Section: Account ───────────────────────────────────────────────
-        SectionLabel("Account")
+        // ── Menu Items ─────────────────────────────────────────────────────
+        SectionLabel("ACCOUNT SETTINGS")
         AccountMenuItem(Icons.Default.Person, "Edit Profile", onClick = onEditProfile)
         AccountMenuItem(Icons.Default.Notifications, "Notifications", onClick = onNotifications)
         AccountMenuItem(Icons.Default.LocationOn, "Saved Addresses", onClick = onSavedAddresses)
 
-        Spacer(Modifier.height(8.dp))
-
-        // ── Section: More ──────────────────────────────────────────────────
-        SectionLabel("More")
-        AccountMenuItem(Icons.Default.Help, "Help & Support", onClick = onHelpSupport)
-        AccountMenuItem(Icons.Default.Info, "About", onClick = onAbout)
-
         Spacer(Modifier.height(16.dp))
+
+        SectionLabel("SUPPORT & LEGAL")
+        AccountMenuItem(Icons.AutoMirrored.Filled.Help, "Help & Support", onClick = onHelpSupport)
+        AccountMenuItem(Icons.Default.Info, "About Nearby", onClick = onAbout)
+
+        Spacer(Modifier.height(24.dp))
 
         // ── Sign Out ───────────────────────────────────────────────────────
         AccountMenuItem(
             icon = Icons.AutoMirrored.Filled.ExitToApp,
-            label = "Sign Out",
-            tint = NearbyError,
-            onClick = onSignOut,
+            label = "Log Out",
+            tint = NearbyColors.OfflineDot,
+            onClick = onLogout,
+            showChevron = false
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
     }
 }
 
 @Composable
 private fun SectionLabel(label: String) {
     Text(
-        text = label.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = NearbyTextTertiary,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+        text = label,
+        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.2.sp),
+        color = NearbyColors.TextTertiary,
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
     )
 }
 
@@ -209,29 +230,32 @@ private fun SectionLabel(label: String) {
 private fun AccountMenuItem(
     icon: ImageVector,
     label: String,
-    tint: androidx.compose.ui.graphics.Color = NearbyTextSecondary,
+    tint: Color = NearbyColors.TextSecondary,
+    showChevron: Boolean = true,
     onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, label, tint = tint, modifier = Modifier.size(24.dp))
+        Icon(icon, label, tint = tint.copy(alpha = 0.8f), modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(16.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = tint,
+            color = if (tint == NearbyColors.OfflineDot) tint else NearbyColors.TextPrimary,
             modifier = Modifier.weight(1f),
         )
-        Icon(
-            Icons.Default.ChevronRight,
-            "Navigate",
-            tint = NearbyTextTertiary,
-            modifier = Modifier.size(20.dp),
-        )
+        if (showChevron) {
+            Icon(
+                Icons.Default.ChevronRight,
+                "Navigate",
+                tint = NearbyColors.TextTertiary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }

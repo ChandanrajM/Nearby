@@ -13,19 +13,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearby.app.data.model.Product
 import com.nearby.app.ui.components.CategoryChips
 import com.nearby.app.ui.components.ProductCard
-import com.nearby.app.ui.theme.*
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
 
 @Composable
 fun StoreManageScreen(
     shopId: String,
     onBack: () -> Unit,
-    onViewQR: (String) -> Unit,
+    onShowQR: () -> Unit,
     onAddProduct: (String) -> Unit = {},
     viewModel: StoreManageViewModel = hiltViewModel(),
 ) {
@@ -35,42 +38,40 @@ fun StoreManageScreen(
         viewModel.loadStore(shopId)
     }
 
-    // Edit product dialog state
     var productToEdit by remember { mutableStateOf<Product?>(null) }
-    // Delete confirmation dialog state
     var productToDelete by remember { mutableStateOf<Product?>(null) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NearbyBackground),
+            .background(NearbyColors.Background),
     ) {
-        // ── Top bar ────────────────────────────────────────────────────
+        // ── Top Bar ────────────────────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NearbyTextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NearbyColors.TextPrimary)
             }
+            Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = state.shopName.ifEmpty { "My Store" },
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    color = NearbyTextPrimary,
+                    style = NearbyType.HeroProductName.copy(fontSize = 20.sp),
+                    color = NearbyColors.TextPrimary,
                 )
                 Text(
-                    text = "Store Management",
+                    text = "Dashboard",
                     style = MaterialTheme.typography.bodySmall,
-                    color = NearbyTextSecondary,
+                    color = NearbyColors.TextSecondary,
                 )
             }
-            // QR Code button
-            IconButton(onClick = { onViewQR(shopId) }) {
-                Icon(Icons.Default.QrCode, "QR Code", tint = NearbyCyan)
+            IconButton(onClick = onShowQR) {
+                Icon(Icons.Default.QrCode, "QR Code", tint = NearbyColors.PriceYellow)
             }
         }
 
@@ -79,19 +80,19 @@ fun StoreManageScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             QuickAction(
                 icon = Icons.Default.Add,
-                label = "Add Product",
+                label = "Add Item",
                 modifier = Modifier.weight(1f),
                 onClick = { onAddProduct(shopId) },
             )
             QuickAction(
                 icon = Icons.Default.QrCode,
-                label = "View QR",
+                label = "Store QR",
                 modifier = Modifier.weight(1f),
-                onClick = { onViewQR(shopId) },
+                onClick = onShowQR,
             )
             QuickAction(
                 icon = Icons.Default.Refresh,
@@ -101,66 +102,67 @@ fun StoreManageScreen(
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // ── Category Chips ─────────────────────────────────────────────
+        // ── Inventory Section ──────────────────────────────────────────
+        Text(
+            text = "Inventory Management",
+            style = NearbyType.CardTitle,
+            color = NearbyColors.TextPrimary,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+
         CategoryChips(
             categories = state.categories,
             selectedCategory = state.selectedCategory,
             onCategorySelected = viewModel::onCategoryChange,
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // ── Product count ──────────────────────────────────────────────
-        Text(
-            text = "${state.filteredProducts.size} products",
-            style = MaterialTheme.typography.bodyMedium,
-            color = NearbyTextSecondary,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        // ── Product Grid (owner view with edit/delete overlays) ────────
         if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = NearbyCyan)
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NearbyColors.PriceYellow)
             }
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.weight(1f)
             ) {
                 items(state.filteredProducts, key = { it.id }) { product ->
                     Box {
                         ProductCard(
                             product = product,
                             onClick = { productToEdit = product },
+                            onAddClick = { /* No-op in admin view */ }
                         )
-                        // Edit button
-                        IconButton(
-                            onClick = { productToEdit = product },
+                        // Admin Overlays
+                        Row(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .size(32.dp)
-                                .background(NearbyOverlay, CircleShape),
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Default.Edit, "Edit", tint = NearbyCyan, modifier = Modifier.size(15.dp))
-                        }
-                        // Delete button
-                        IconButton(
-                            onClick = { productToDelete = product },
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(4.dp)
-                                .size(32.dp)
-                                .background(NearbyOverlay, CircleShape),
-                        ) {
-                            Icon(Icons.Default.Delete, "Delete", tint = NearbyError, modifier = Modifier.size(15.dp))
+                            IconButton(
+                                onClick = { productToEdit = product },
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape),
+                            ) {
+                                Icon(Icons.Default.Edit, "Edit", tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
+                            IconButton(
+                                onClick = { productToDelete = product },
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .background(NearbyColors.OfflineDot.copy(alpha = 0.8f), CircleShape),
+                            ) {
+                                Icon(Icons.Default.Delete, "Delete", tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
                         }
                     }
                 }
@@ -168,7 +170,7 @@ fun StoreManageScreen(
         }
     }
 
-    // ── Edit Product Dialog ────────────────────────────────────────────
+    // ── Dialogs ──────────────────────────────────────────────────────
     productToEdit?.let { product ->
         EditProductDialog(
             product = product,
@@ -180,16 +182,15 @@ fun StoreManageScreen(
         )
     }
 
-    // ── Delete Confirmation Dialog ─────────────────────────────────────
     productToDelete?.let { product ->
         AlertDialog(
             onDismissRequest = { productToDelete = null },
-            containerColor = NearbySurface,
-            title = { Text("Delete Product", color = NearbyTextPrimary) },
+            containerColor = NearbyColors.Surface,
+            title = { Text("Delete Product", color = NearbyColors.TextPrimary) },
             text = {
                 Text(
-                    "Are you sure you want to delete \"${product.name}\"? This cannot be undone.",
-                    color = NearbyTextSecondary,
+                    "Are you sure you want to delete \"${product.name}\"? This action cannot be reversed.",
+                    color = NearbyColors.TextSecondary,
                 )
             },
             confirmButton = {
@@ -198,12 +199,12 @@ fun StoreManageScreen(
                         viewModel.deleteProduct(product.id)
                         productToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = NearbyError),
-                ) { Text("Delete") }
+                    colors = ButtonDefaults.buttonColors(containerColor = NearbyColors.OfflineDot),
+                ) { Text("Delete", color = Color.White) }
             },
             dismissButton = {
                 TextButton(onClick = { productToDelete = null }) {
-                    Text("Cancel", color = NearbyTextSecondary)
+                    Text("Cancel", color = NearbyColors.TextTertiary)
                 }
             },
         )
@@ -217,21 +218,24 @@ private fun QuickAction(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = NearbyCard),
+    Surface(
+        modifier = modifier.height(90.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = NearbyColors.Surface,
         onClick = onClick,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, label, tint = NearbyCyan, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.height(6.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = NearbyTextSecondary)
+            Icon(icon, label, tint = NearbyColors.PriceYellow, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = label, 
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), 
+                color = NearbyColors.TextSecondary
+            )
         }
     }
 }
@@ -249,50 +253,73 @@ private fun EditProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = NearbySurface,
+        containerColor = NearbyColors.Surface,
         title = {
-            Text("Edit Product", color = NearbyTextPrimary, fontWeight = FontWeight.Bold)
+            Text("Edit Product Details", color = NearbyColors.TextPrimary, style = NearbyType.CardTitle)
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf(
-                    Triple("Name", name) { v: String -> name = v },
-                    Triple("Price (₹)", price) { v: String -> price = v },
-                ).forEach { (label, value, onChange) ->
-                    OutlinedTextField(
-                        value = value,
-                        onValueChange = onChange,
-                        label = { Text(label) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NearbyCyan,
-                            unfocusedBorderColor = NearbyDivider,
-                            cursorColor = NearbyCyan,
-                            focusedTextColor = NearbyTextPrimary,
-                            unfocusedTextColor = NearbyTextPrimary,
-                        ),
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Product Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NearbyColors.PriceYellow,
+                        unfocusedBorderColor = NearbyColors.Background,
+                        focusedLabelColor = NearbyColors.PriceYellow,
+                        cursorColor = NearbyColors.PriceYellow,
+                        focusedTextColor = NearbyColors.TextPrimary,
+                        unfocusedTextColor = NearbyColors.TextPrimary,
+                    ),
+                )
+                OutlinedTextField(
+                    value = price,
+                    onValueChange = { price = it },
+                    label = { Text("Price (₹)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NearbyColors.PriceYellow,
+                        unfocusedBorderColor = NearbyColors.Background,
+                        focusedLabelColor = NearbyColors.PriceYellow,
+                        cursorColor = NearbyColors.PriceYellow,
+                        focusedTextColor = NearbyColors.TextPrimary,
+                        unfocusedTextColor = NearbyColors.TextPrimary,
+                    ),
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Switch(
                         checked = isAvailable,
                         onCheckedChange = { isAvailable = it },
-                        colors = CheckboxDefaults.colors(checkedColor = NearbyCyan)
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = NearbyColors.OnlineDot,
+                            checkedTrackColor = NearbyColors.OnlineDot.copy(alpha = 0.3f)
+                        )
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Is Available", color = NearbyTextPrimary)
+                    Spacer(Modifier.width(12.dp))
+                    Text("Available in Store", color = NearbyColors.TextPrimary)
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onUpdate(name, price, isAvailable) },
-                colors = ButtonDefaults.buttonColors(containerColor = NearbyCyan, contentColor = NearbyBlack),
-            ) { Text("Save Changes", fontWeight = FontWeight.Bold) }
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = NearbyColors.PriceYellow,
+                    contentColor = NearbyColors.Background
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) { Text("Update", fontWeight = FontWeight.Bold) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = NearbyTextSecondary) }
+            TextButton(onClick = onDismiss) { 
+                Text("Cancel", color = NearbyColors.TextTertiary) 
+            }
         },
     )
 }

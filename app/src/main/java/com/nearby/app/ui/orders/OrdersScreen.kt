@@ -5,129 +5,145 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nearby.app.data.model.Order
-import com.nearby.app.ui.theme.*
-
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nearby.app.data.model.Order
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
 
 @Composable
-fun OrdersScreen(viewModel: OrdersViewModel = hiltViewModel()) {
+fun OrdersScreen(
+    onBack: () -> Unit,
+    viewModel: OrdersViewModel = hiltViewModel(),
+) {
     val orders by viewModel.orders.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NearbyBackground),
+            .background(NearbyColors.Background),
     ) {
-        // ── Header ─────────────────────────────────────────────────────
-        Text(
-            text = "My Orders",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-            color = NearbyTextPrimary,
-            modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 16.dp),
-        )
+        // ── Top Bar ──────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NearbyColors.TextPrimary)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "My Orders",
+                style = NearbyType.HeroProductName.copy(fontSize = 20.sp),
+                color = NearbyColors.TextPrimary,
+            )
+        }
 
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = NearbyCyan)
-            }
-        } else if (error != null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "Error: $error", color = NearbyError)
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NearbyColors.PriceYellow)
             }
         } else if (orders.isEmpty()) {
-            Box(
+            Column(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📦", style = MaterialTheme.typography.displayLarge)
-                    Spacer(Modifier.height(12.dp))
-                    Text("No orders yet", style = MaterialTheme.typography.bodyLarge, color = NearbyTextSecondary)
-                }
+                Icon(
+                    imageVector = Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = NearbyColors.SurfaceVariant,
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "No orders yet",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = NearbyColors.TextSecondary,
+                )
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(
-                    items = orders.distinctBy { it.id }, // Ensure no duplicates
-                    key = { it.id }
-                ) { order ->
-                    OrderCard(order)
+                items(orders) { order ->
+                    OrderItemCard(order)
                 }
-                item { Spacer(Modifier.height(16.dp)) }
             }
         }
     }
 }
 
 @Composable
-private fun OrderCard(order: Order) {
-    val statusColor = when (order.status) {
-        "delivered" -> NearbyGreen
-        "confirmed" -> NearbyCyan
-        "placed" -> NearbyYellow
-        "cancelled" -> NearbyError
-        else -> NearbyTextSecondary
-    }
-
+fun OrderItemCard(order: Order) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = NearbyCard),
-        elevation = CardDefaults.cardElevation(0.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = NearbyColors.Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = order.shop_name,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = NearbyTextPrimary,
+                    text = "Order #${order.id.takeLast(6).uppercase()}",
+                    style = NearbyType.CardTitle,
+                    color = NearbyColors.TextPrimary,
                 )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "${order.items.size} item(s) • ₹${order.total.toInt()}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = NearbyColors.TextSecondary,
+                )
+                Spacer(Modifier.height(8.dp))
+                
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = statusColor.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(6.dp),
+                    color = when (order.status.lowercase()) {
+                        "delivered" -> NearbyColors.OnlineDot.copy(alpha = 0.1f)
+                        "cancelled" -> NearbyColors.OfflineDot.copy(alpha = 0.1f)
+                        else -> NearbyColors.PriceYellow.copy(alpha = 0.1f)
+                    }
                 ) {
                     Text(
-                        text = order.status.replaceFirstChar { it.uppercase() },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = statusColor,
+                        text = order.status.uppercase(),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp
+                        ),
+                        color = when (order.status.lowercase()) {
+                            "delivered" -> NearbyColors.OnlineDot
+                            "cancelled" -> NearbyColors.OfflineDot
+                            else -> NearbyColors.PriceYellow
+                        }
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = order.created_at,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = NearbyTextTertiary,
-                )
-                Text(
-                    text = "₹${order.total.toInt()}",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = NearbyYellow,
-                )
-            }
+            
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = NearbyColors.TextTertiary,
+            )
         }
     }
 }

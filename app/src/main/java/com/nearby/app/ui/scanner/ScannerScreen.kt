@@ -4,7 +4,9 @@ import android.Manifest
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.*
@@ -14,12 +16,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -30,82 +34,47 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
-import com.nearby.app.ui.theme.*
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
 
-@OptIn(ExperimentalGetImage::class)
 @Composable
 fun ScannerScreen(
-    onScanResult: (String) -> Unit,
+    onShopScanned: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var hasCamPermission by remember { mutableStateOf(false) }
-    var scanned by remember { mutableStateOf(false) }
 
-    val permLauncher = rememberLauncherForActivityResult(
+    var hasCameraPermission by remember { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> hasCamPermission = granted }
+    ) { hasCameraPermission = it }
 
     LaunchedEffect(Unit) {
-        val ok = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.CAMERA
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (ok) hasCamPermission = true
-        else permLauncher.launch(Manifest.permission.CAMERA)
+        permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
-    // ── Gallery Picker ──────────────────────────────────────────
-    val galleryLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let {
-            val inputImage = InputImage.fromFilePath(context, it)
-            val scanner = BarcodeScanning.getClient()
-            scanner.process(inputImage)
-                .addOnSuccessListener { barcodes ->
-                    for (barcode in barcodes) {
-                        val value = barcode.rawValue ?: continue
-                        val shopId = extractShopId(value)
-                        if (shopId != null && !scanned) {
-                            scanned = true
-                            onScanResult(shopId)
-                            return@addOnSuccessListener
-                        }
-                    }
-                    // If no valid QR found in image
-                    Log.d("ScannerScreen", "No valid QR code found in selected image")
-                }
-                .addOnFailureListener { e ->
-                    Log.e("ScannerScreen", "Gallery decode failed", e)
-                }
-        }
-    }
-
-    // Scan-line animation (top to bottom)
-    val infiniteTransition = rememberInfiniteTransition(label = "scanLine")
-    val scanLineProgress by infiniteTransition.animateFloat(
+    val scanLineProgress by rememberInfiniteTransition(label = "").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
+            repeatMode = RepeatMode.Reverse
         ),
-        label = "scanLineY",
+        label = ""
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(NearbyBlack),
+            .background(Color.Black)
     ) {
-        if (hasCamPermission) {
-            // ── Camera Preview ──────────────────────────────────────────
+        if (hasCameraPermission) {
             AndroidView(
                 factory = { ctx ->
                     val previewView = PreviewView(ctx)
@@ -115,164 +84,146 @@ fun ScannerScreen(
                         val preview = Preview.Builder().build().also {
                             it.surfaceProvider = previewView.surfaceProvider
                         }
+
                         val analyzer = ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
                             .also { analysis ->
                                 analysis.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
+                                    @androidx.camera.core.ExperimentalGetImage
                                     val mediaImage = imageProxy.image
-                                    if (mediaImage != null && !scanned) {
-                                        val inputImage = InputImage.fromMediaImage(
-                                            mediaImage, imageProxy.imageInfo.rotationDegrees
-                                        )
-                                        val scanner = BarcodeScanning.getClient()
-                                        scanner.process(inputImage)
+                                    if (mediaImage != null) {
+                                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                        BarcodeScanning.getClient().process(image)
                                             .addOnSuccessListener { barcodes ->
                                                 for (barcode in barcodes) {
                                                     val value = barcode.rawValue ?: continue
-                                                    // Extract shop ID from QR value
                                                     val shopId = extractShopId(value)
-                                                    if (shopId != null && !scanned) {
-                                                        scanned = true
-                                                        onScanResult(shopId)
+                                                    if (shopId != null) {
+                                                        onShopScanned(shopId)
                                                     }
                                                 }
                                             }
-                                            .addOnCompleteListener {
-                                                imageProxy.close()
-                                            }
+                                            .addOnCompleteListener { imageProxy.close() }
                                     } else {
                                         imageProxy.close()
                                     }
                                 }
                             }
+
                         try {
                             provider.unbindAll()
                             provider.bindToLifecycle(
-                                lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA,
-                                preview, analyzer
+                                lifecycleOwner,
+                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                preview,
+                                analyzer
                             )
                         } catch (e: Exception) {
-                            Log.e("ScannerScreen", "Camera bind failed", e)
+                            Log.e("Scanner", "Bind failed", e)
                         }
                     }, ContextCompat.getMainExecutor(ctx))
                     previewView
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
 
-            // ── Overlay with cut-out ────────────────────────────────────
+            // ── Overlay ──────────────────────────────────────────────
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val scanAreaSize = size.width * 0.65f
+                val scanAreaSize = size.width * 0.7f
                 val left = (size.width - scanAreaSize) / 2
                 val top = (size.height - scanAreaSize) / 2
 
-                // Dark overlay
-                drawRect(color = Color.Black.copy(alpha = 0.6f))
+                // Shadow overlay
+                drawRect(color = Color.Black.copy(alpha = 0.7f))
 
-                // Clear the scan area
+                // Cut-out
                 drawRoundRect(
                     color = Color.Transparent,
                     topLeft = Offset(left, top),
                     size = Size(scanAreaSize, scanAreaSize),
-                    cornerRadius = CornerRadius(20f),
-                    blendMode = BlendMode.Clear,
+                    cornerRadius = CornerRadius(24.dp.toPx()),
+                    blendMode = BlendMode.Clear
                 )
 
-                // Scan frame border
+                // Frame
                 drawRoundRect(
-                    color = NearbyCyan,
+                    color = NearbyColors.PriceYellow,
                     topLeft = Offset(left, top),
                     size = Size(scanAreaSize, scanAreaSize),
-                    cornerRadius = CornerRadius(20f),
-                    style = Stroke(width = 3.dp.toPx()),
+                    cornerRadius = CornerRadius(24.dp.toPx()),
+                    style = Stroke(width = 2.dp.toPx())
                 )
 
-                // Animated scan line
-                val lineY = top + scanAreaSize * scanLineProgress
+                // Scan line
+                val lineY = top + (scanAreaSize * scanLineProgress)
                 drawLine(
-                    color = NearbyCyan.copy(alpha = 0.8f),
-                    start = Offset(left + 16, lineY),
-                    end = Offset(left + scanAreaSize - 16, lineY),
-                    strokeWidth = 2.dp.toPx(),
+                    color = NearbyColors.PriceYellow.copy(alpha = 0.6f),
+                    start = Offset(left + 20.dp.toPx(), lineY),
+                    end = Offset(left + scanAreaSize - 20.dp.toPx(), lineY),
+                    strokeWidth = 2.dp.toPx()
                 )
             }
-        } else {
-            // Permission not granted
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Camera permission is required to scan QR codes", color = NearbyTextSecondary)
-            }
         }
 
-        // ── Top bar ─────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(NearbyOverlay, CircleShape),
-            ) {
-                Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
-            }
-            Spacer(Modifier.width(16.dp))
-            Text(
-                text = "Scan QR Code",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-            )
-        }
-
-        // ── Bottom hint & Gallery ───────────────────────────────────────
+        // ── Controls ───────────────────────────────────────────────
         Column(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 60.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Gallery Button
-            Button(
-                onClick = { galleryLauncher.launch("image/*") },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = NearbyOverlay,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                modifier = Modifier.wrapContentSize(),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.PhotoLibrary, null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Upload from Gallery", style = MaterialTheme.typography.labelLarge)
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.5f))
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                }
+                Spacer(Modifier.width(16.dp))
+                Text(
+                    "Scan Shop QR",
+                    style = NearbyType.HeroProductName.copy(fontSize = 20.sp),
+                    color = Color.White
+                )
             }
 
-            Box(
-                modifier = Modifier
-                    .background(NearbyOverlay.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+            Spacer(Modifier.weight(1f))
+
+            Surface(
+                modifier = Modifier.padding(bottom = 80.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.Black.copy(alpha = 0.6f)
             ) {
-                Text(
-                    text = "Point camera at QR or upload an image",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, null, tint = NearbyColors.PriceYellow)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Align the QR code within the frame",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
+                }
             }
         }
     }
 }
 
 private fun extractShopId(qrValue: String): String? {
-    // Expected format: https://nearby.app/shop/{shopId}  or just the shopId
     return when {
         qrValue.contains("/shop/") -> qrValue.substringAfterLast("/shop/").trim()
         qrValue.startsWith("shop-") -> qrValue.trim()
-        qrValue.length in 4..100 -> qrValue.trim()  // Accept raw IDs
+        qrValue.length in 4..50 -> qrValue.trim()
         else -> null
     }
 }

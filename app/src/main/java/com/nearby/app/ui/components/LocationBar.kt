@@ -1,47 +1,71 @@
 package com.nearby.app.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nearby.app.ui.theme.*
+import androidx.compose.ui.unit.sp
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
 
 @Composable
 fun LocationBar(
     address: String,
     area: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.LocationOn,
-            contentDescription = "Location",
-            tint = NearbyGreen,
-            modifier = Modifier.size(28.dp),
-        )
-        Spacer(Modifier.width(10.dp))
-        Column {
-            Text(
-                text = area.ifEmpty { "Your Location" },
-                style = MaterialTheme.typography.titleLarge,
-                color = NearbyTextPrimary,
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(NearbyColors.PriceYellow.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = NearbyColors.PriceYellow,
+                modifier = Modifier.size(20.dp)
             )
+        }
+        
+        Spacer(Modifier.width(12.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (area.isNotEmpty()) area else "Select Location",
+                    style = NearbyType.CardTitle,
+                    color = NearbyColors.TextPrimary
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = NearbyColors.TextSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             Text(
-                text = if (address.length > 40) address.take(40) + "..." else address,
+                text = if (address.isNotEmpty()) address else "Locating you...",
                 style = MaterialTheme.typography.bodySmall,
-                color = NearbyTextSecondary,
+                color = NearbyColors.TextSecondary,
+                maxLines = 1
             )
         }
     }

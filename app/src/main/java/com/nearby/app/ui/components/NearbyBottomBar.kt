@@ -16,12 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.nearby.app.navigation.Routes
-import com.nearby.app.ui.theme.*
+import com.nearby.app.ui.navigation.Routes
+import com.nearby.app.ui.theme.NearbyColors
 
 data class BottomNavItem(
     val route: String,
@@ -31,15 +29,15 @@ data class BottomNavItem(
 )
 
 val baseBottomNavItems = listOf(
-    BottomNavItem(Routes.Home.route, "Home", Icons.Filled.Home, Icons.Outlined.Home),
-    BottomNavItem(Routes.Orders.route, "Orders", Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart),
-    BottomNavItem(Routes.Cart.route, "Cart", Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart),
-    BottomNavItem(Routes.Account.route, "Account", Icons.Filled.Person, Icons.Outlined.Person),
+    BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home, Icons.Outlined.Home),
+    BottomNavItem(Routes.ORDERS, "Orders", Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart),
+    BottomNavItem(Routes.CART, "Cart", Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart),
+    BottomNavItem(Routes.ACCOUNT, "Account", Icons.Filled.Person, Icons.Outlined.Person),
 )
 
 @Composable
 fun NearbyBottomBar(
-    currentRoute: String,
+    currentRoute: String?,
     user: com.nearby.app.data.model.User? = null,
     onNavigate: (String) -> Unit,
 ) {
@@ -48,22 +46,26 @@ fun NearbyBottomBar(
         if (user?.shopStatus == "approved") {
             // Insert Store item before Account
             val shopId = user.shop_id ?: "unknown"
-            list.add(3, BottomNavItem(Routes.StoreManage.createRoute(shopId), "Store", Icons.Filled.Storefront, Icons.Outlined.Storefront))
+            list.add(3, BottomNavItem(Routes.storeManage(shopId), "Store", Icons.Filled.Storefront, Icons.Outlined.Storefront))
         }
         list
     }
 
     NavigationBar(
-        containerColor = NearbyBlack,
-        contentColor = NearbyTextPrimary,
+        containerColor = NearbyColors.Background,
+        contentColor = NearbyColors.TextPrimary,
         tonalElevation = 0.dp,
     ) {
         items.forEach { item ->
+            // Match exactly or start with for deeper routes if needed, 
+            // but for bottom bar usually exact match on the base route.
             val selected = currentRoute == item.route
+            
             val iconColor by animateColorAsState(
-                if (selected) NearbyCyan else NearbyTextTertiary,
+                if (selected) NearbyColors.PriceYellow else NearbyColors.TextTertiary,
                 label = "navIconColor"
             )
+            
             NavigationBarItem(
                 selected = selected,
                 onClick = { onNavigate(item.route) },
@@ -82,7 +84,7 @@ fun NearbyBottomBar(
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = NearbyCyan.copy(alpha = 0.12f),
+                    indicatorColor = NearbyColors.PriceYellow.copy(alpha = 0.1f),
                 ),
             )
         }

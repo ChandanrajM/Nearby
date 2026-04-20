@@ -1,157 +1,160 @@
 package com.nearby.app.ui.store
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nearby.app.ui.theme.*
-
-import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import android.graphics.Bitmap
+import com.nearby.app.ui.theme.NearbyColors
+import com.nearby.app.ui.theme.NearbyType
+import com.nearby.app.ui.theme.Typography as NearbyTypography
+import com.nearby.app.util.QRCodeGenerator
 
 @Composable
 fun StoreQRScreen(
     shopId: String,
     onBack: () -> Unit,
-    viewModel: StoreQRViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val qrBitmap = QRCodeGenerator.generate("https://nearby.app/s/$shopId")
 
-    LaunchedEffect(shopId) {
-        viewModel.loadQrCode(shopId)
-    }
-
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NearbyBackground),
+            .background(NearbyColors.Background),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // ── Top Bar ──────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // ── Top bar ────────────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = NearbyTextPrimary)
-                }
-                Text(
-                    "Your QR Code",
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    color = NearbyTextPrimary,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { /* TODO: Share QR */ }) {
-                    Icon(Icons.Default.Share, "Share", tint = NearbyCyan)
-                }
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NearbyColors.TextPrimary)
             }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Store QR Code",
+                style = NearbyType.HeroProductName.copy(fontSize = 20.sp),
+                color = NearbyColors.TextPrimary,
+            )
+        }
 
-            Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(40.dp))
 
-            // ── QR Code Card ───────────────────────────────────────────
-            Card(
-                modifier = Modifier
-                    .size(300.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White), // White background for better scanning
-                elevation = CardDefaults.cardElevation(8.dp),
+        // ── QR Container ──────────────────────────────────────────────
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(containerColor = NearbyColors.Surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Text(
+                    text = "Scan to Shop",
+                    style = NearbyType.HeroProductName.copy(fontSize = 24.sp),
+                    color = NearbyColors.TextPrimary
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Customers can scan this to open your store instantly",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = NearbyColors.TextTertiary,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(Modifier.height(32.dp))
+
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center,
+                        .size(240.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.White)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(color = NearbyCyan)
-                    } else if (state.error != null) {
-                        Text(state.error!!, color = NearbyError, textAlign = TextAlign.Center)
-                    } else if (state.qrImageUrl != null) {
-                        AsyncImage(
-                            model = state.qrImageUrl,
+                    if (qrBitmap != null) {
+                        Image(
+                            bitmap = qrBitmap.asImageBitmap(),
                             contentDescription = "Shop QR Code",
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        // Placeholder if no image yet
-                        Text("No QR code available", color = NearbyTextTertiary)
+                        CircularProgressIndicator(color = NearbyColors.PriceYellow)
                     }
                 }
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            Text(
-                text = "Share this QR code with your customers",
-                style = MaterialTheme.typography.bodyLarge,
-                color = NearbyTextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp),
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "They can scan it to browse your store instantly",
-                style = MaterialTheme.typography.bodyMedium,
-                color = NearbyTextTertiary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp),
-            )
-
-
-            Spacer(Modifier.height(40.dp))
-
-            // ── Action buttons ─────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OutlinedButton(
-                    onClick = { /* TODO: Download QR */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = Brush.linearGradient(listOf(NearbyDivider, NearbyDivider))
-                    ),
-                ) {
-                    Text("Download", color = NearbyTextPrimary)
-                }
-                Button(
-                    onClick = { /* TODO: Share QR */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NearbyCyan, contentColor = NearbyBlack),
-                ) {
-                    Text("Share", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                }
+                
+                Spacer(Modifier.height(32.dp))
+                
+                Text(
+                    text = "ID: $shopId",
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
+                    color = NearbyColors.TextTertiary
+                )
             }
         }
+
+        Spacer(Modifier.weight(1f))
+
+        // ── Actions ──────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedButton(
+                onClick = { /* TODO */ },
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, NearbyColors.Surface),
+            ) {
+                Icon(Icons.Default.Download, null, tint = NearbyColors.TextPrimary)
+                Spacer(Modifier.width(8.dp))
+                Text("Save", color = NearbyColors.TextPrimary)
+            }
+            
+            Button(
+                onClick = { /* TODO */ },
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = NearbyColors.PriceYellow,
+                    contentColor = NearbyColors.Background
+                )
+            ) {
+                Icon(Icons.Default.Share, null)
+                Spacer(Modifier.width(8.dp))
+                // Use static Typography reference
+                Text(
+                    text = "Share", 
+                    style = NearbyTypography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        }
+        
+        Spacer(Modifier.height(40.dp))
     }
 }

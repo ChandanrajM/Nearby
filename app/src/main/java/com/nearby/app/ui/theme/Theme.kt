@@ -89,6 +89,12 @@ object NearbyType {
         color = NearbyColors.LiveRed,
         letterSpacing = 0.8.sp
     )
+    val CardTitle = TextStyle(
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Bold,
+        color = NearbyColors.TextPrimary,
+        letterSpacing = 0.sp
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────
